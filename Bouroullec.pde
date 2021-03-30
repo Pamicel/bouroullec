@@ -3,9 +3,6 @@ import toxi.geom.*;
 ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
 
 int RESAMPLE_SIZE = 200;
-Vec2D[] newCurve = new Vec2D[RESAMPLE_SIZE];
-Vec2D[] newRegularCurve = new Vec2D[RESAMPLE_SIZE];
-Vec2D[] newRemappedCurve = new Vec2D[RESAMPLE_SIZE];
 
 class Mesh {
   Vec2D[] startCurve = null,
@@ -31,6 +28,10 @@ class Mesh {
     );
   }
 
+  boolean meshSet() {
+    return this.positions != null;
+  }
+
   void displayCurve(Vec2D[] curve) {
     Vec2D pos;
     push();
@@ -48,16 +49,13 @@ class Mesh {
   void displayMesh() {
     Vec2D pos;
     push();
-    stroke(0, 0, 255);
-    beginShape();
-    for (int i = 0; i < this.positions[0].length; i++) {
-      for (int j = 0; j < this.positions[0].length; j++) {
-        pos = this.positions[i];
-        vertex(pos.x, pos.y);
+    stroke(255, 0, 0);
+    for (int i = 0; i < this.positions.length; i++) {
+      for (int j = 0; j < this.positions[i].length; j++) {
+        pos = this.positions[i][j];
         circle(pos.x, pos.y, 5);
       }
     }
-    endShape();
     pop();
   }
 
@@ -73,6 +71,10 @@ class Mesh {
     }
     if (this.sideStopCurve != null) {
       this.displayCurve(this.sideStopCurve);
+    }
+
+    if (this.meshSet()) {
+      this.displayMesh();
     }
   }
 
@@ -143,30 +145,31 @@ class Mesh {
     int lsf = this.startCurve.length - 1; // num of segments in each start and finish
     int lside = this.sideStartCurve.length - 1; // num of segments in each sides
 
-    this.positions = new Vec2D[lside][lsf];
+
+    this.positions = new Vec2D[this.sideStartCurve.length][this.startCurve.length];
     this.positions[0][0] = this.startCurve[0];
-    this.positions[0][lsf] = this.sideStopCurve[0];
-    this.positions[lside][0] = this.finishCurve[0];
-    this.positions[lside][lsf] = this.finishCurve[lsf];
 
-    Vec2D pointOnStart, pointOnFinish, pointOnSideStart, pointOnSideStop, startToFinish, startToFinishPoint, sideToSide, sideToSidePoint;
+    Vec2D pointOnStart,
+          pointOnFinish,
+          pointOnSideStart,
+          pointOnSideStop,
+          startToFinish,
+          sideToSide;
 
-    for (int i = 1; i < lside; i++) {
-      for (int j = 1; j < lsf; j++) {
+    // FIX
+    for (int i = 0; i <= lside; i++) {
+      for (int j = 0; j <= lsf; j++) {
         pointOnStart = this.startCurve[j];
         pointOnFinish = this.finishCurve[j];
         pointOnSideStart = this.sideStartCurve[i];
         pointOnSideStop = this.sideStopCurve[i];
-        float sfRatio = (float)j/(float)lsf;
-        float sideRatio = (float)i/(float)lside;
+        float sfRatio = (float)j/(float)(lsf + 1);
+        float sideRatio = (float)i/(float)(lside + 1);
 
-        startToFinish = pointOnFinish.sub(pointOnStart);
-        sideToSide = pointOnSideStop.sub(pointOnSideStart);
+        startToFinish = pointOnFinish.sub(pointOnStart).scale(sideRatio);
+        sideToSide = pointOnSideStop.sub(pointOnSideStart).scale(sfRatio);
 
-        startToFinishPoint = startToFinish.getNormalizedTo(startToFinish.magnitude() * sideRatio);
-        sideToSidePoint = sideToSide.getNormalizedTo(sideToSide.magnitude() * sfRatio);
-
-        this.positions[i][j] = this.positions[0][0].add(startToFinishPoint.scale(.5)).add(sideToSidePoint.scale(.5));
+        this.positions[i][j] = pointOnStart.add(startToFinish).add(pointOnSideStart).add(sideToSide).scale(.5);
       }
     }
   }
@@ -287,10 +290,4 @@ void mouseReleased() {
       mesh.computeMesh();
     }
   }
-  // newCurve = resample(curve, RESAMPLE_SIZE);
-  // newRegularCurve = regularResample(curve, RESAMPLE_SIZE);
-  // Vec2D pointA = new Vec2D(100, 100);
-  // Vec2D pointB = new Vec2D(700, 700);
-  // newRemappedCurve = remapCurve(newRegularCurve, pointA, pointB);
-
 }
