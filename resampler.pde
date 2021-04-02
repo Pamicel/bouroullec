@@ -1,3 +1,12 @@
+Vec2D[] densityResample(ArrayList<Vec2D> curve, float linearDensity) {
+  float distSum = 0;
+  int curveLen = curve.size();
+  for (int i = 0; i < curveLen - 1; i++) {
+    distSum += curve.get(i).distanceTo(curve.get(i + 1));
+  }
+  int resampleSize = floor(linearDensity * distSum);
+  return regularResample(curve, resampleSize);
+}
 
 Vec2D[] regularResample (ArrayList<Vec2D> curve, int newLen) {
   int currentLen = curve.size();
