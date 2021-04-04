@@ -5,7 +5,32 @@ Vec2D[] resampledCurve = null;
 
 class RibonEndButtons {
   Vec2D rightBank, leftBank, center;
+  float radius = 5;
   RibonEndButtons () {}
+
+  private boolean isHover (Vec2D position, int mX, int mY) {
+    return position.distanceToSquared(new Vec2D(mX, mY)) < (this.radius * this.radius);
+  }
+
+  boolean isHoverLeftBank(int mX, int mY) {
+    return this.isHover(this.leftBank, mX, mY);
+  }
+  boolean isHoverRightBank(int mX, int mY) {
+    return this.isHover(this.leftBank, mX, mY);
+  }
+  boolean isHoverCenter(int mX, int mY) {
+    return this.isHover(this.leftBank, mX, mY);
+  }
+
+  void display(PGraphics layer) {
+    layer.noStroke();
+    layer.fill(255, 0, 0);
+    layer.circle(this.center.x, this.center.y, this.radius);
+    layer.fill(0, 255, 0);
+    layer.circle(this.rightBank.x, this.rightBank.y, this.radius);
+    layer.fill(0, 0, 255);
+    layer.circle(this.leftBank.x, this.leftBank.y, this.radius);
+  }
 }
 
 class Ribon {
@@ -98,23 +123,15 @@ class Ribon {
 
   void displayEndButtons(PGraphics layer) {
     if (this.frontButtons != null && this.backButtons != null) {
-      layer.noStroke();
-      layer.fill(255, 0, 0);
-      layer.circle(this.frontButtons.center.x, this.frontButtons.center.y, 5);
-      layer.circle(this.backButtons.center.x, this.backButtons.center.y, 5);
-      layer.fill(0, 255, 0);
-      layer.circle(this.frontButtons.rightBank.x, this.frontButtons.rightBank.y, 5);
-      layer.circle(this.backButtons.rightBank.x, this.backButtons.rightBank.y, 5);
-      layer.fill(0, 0, 255);
-      layer.circle(this.frontButtons.leftBank.x, this.frontButtons.leftBank.y, 5);
-      layer.circle(this.backButtons.leftBank.x, this.backButtons.leftBank.y, 5);
+      this.frontButtons.display(layer);
+      this.backButtons.display(layer);
     }
   }
 }
 
 PGraphics layer1, layer2;
 float LINEAR_DENSITY = 1.0 / 10; // 1 point every 10 pixels
-Ribon ribon = new Ribon(LINEAR_DENSITY);
+ArrayList<Ribon> ribons = new ArrayList<Ribon>();
 
 void setup() {
   size(800, 800);
@@ -148,16 +165,6 @@ void draw() {
     }
     endShape();
   }
-
-  layer1.beginDraw();
-  layer1.clear();
-  ribon.displayCurve(layer1);
-  layer1.endDraw();
-
-  layer2.beginDraw();
-  layer2.clear();
-  ribon.displayEndButtons(layer2);
-  layer2.endDraw();
 
   image(layer1, 0, 0);
   image(layer2, 0, 0);
@@ -198,8 +205,38 @@ void mousePressed() {
   curve.add(new Vec2D(mouseX, mouseY));
 }
 
+void printRibons() {
+  layer1.beginDraw();
+  layer1.clear();
+  layer1.endDraw();
+  Ribon currentRibon;
+  for (int i = 0; i < ribons.size(); i++) {
+    currentRibon = ribons.get(i);
+    layer1.beginDraw();
+    currentRibon.displayCurve(layer1);
+    layer1.endDraw();
+  }
+}
+
+void printRibonButtons() {
+  Ribon currentRibon;
+  layer2.beginDraw();
+  layer2.clear();
+  layer2.endDraw();
+  for (int i = 0; i < ribons.size(); i++) {
+    currentRibon = ribons.get(i);
+    layer2.beginDraw();
+    currentRibon.displayEndButtons(layer2);
+    layer2.endDraw();
+  }
+}
+
 void mouseReleased() {
   resampledCurve = densityResample(curve, 1.0 / 10);
-  ribon.addToBack(curve);
-  ribon.computeEndButtons(20);
+  Ribon newRibon = new Ribon(LINEAR_DENSITY);
+  newRibon.addToBack(curve);
+  newRibon.computeEndButtons(20);
+  ribons.add(newRibon);
+  printRibons();
+  printRibonButtons();
 }
