@@ -1,7 +1,10 @@
 import toxi.geom.*;
+import java.util.*;
 
 ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
 Vec2D[] resampledCurve = null;
+
+RibonEndPositions ribonEndPositions;
 
 class RibonEndButtons {
   Vec2D rightBank, leftBank, center;
@@ -41,6 +44,10 @@ class Ribon {
 
   Ribon(float linearDensity) {
     this.linearDensity = linearDensity;
+  }
+
+  void addFirstCurve(ArrayList<Vec2D> curve) {
+    this.addToBack(curve);
   }
 
   void addToBack(ArrayList<Vec2D> curve) {
@@ -129,15 +136,75 @@ class Ribon {
   }
 }
 
-PGraphics layer1, layer2;
+class RibonEndPositions {
+  int nw = 6, nh = 6;
+  ArrayList<Ribon>[] ribons;
+  int areaW, areaH;
+
+  RibonEndPositions(int areaW, int areaH) {
+    this.areaW = areaW;
+    this.areaH = areaH;
+    this.ribons = new ArrayList[this.nw * this.nh];
+    for (int i = 0; i < this.ribons.length; i++) {
+      this.ribons[i] = null;
+    }
+  }
+
+  private int positionIndex (Vec2D position) {
+    float normXpos = position.x / this.areaW;
+    int xindex = floor(normXpos * this.nw);
+    float normYpos = position.y / this.areaH;
+    int yindex = floor(normYpos * this.nh);
+    return xindex + this.nw * yindex;
+  }
+
+  private void placeRibonAt(int index, Ribon ribon) {
+    if (this.ribons[index] == null) {
+      this.ribons[index] = new ArrayList<Ribon>();
+    }
+    this.ribons[index].add(ribon);
+  }
+
+  ArrayList<Ribon> getRibonsAt(int mX, int mY) {
+    int index = this.positionIndex(new Vec2D(mX, mY));
+    if (this.ribons[index] != null) {
+      return this.ribons[index];
+    }
+    return null;
+  }
+
+  void addRibon(Ribon ribon) {
+    HashSet<Integer> indices = new HashSet<Integer>();
+    indices.add(this.positionIndex(ribon.frontButtons.center));
+    indices.add(this.positionIndex(ribon.frontButtons.leftBank));
+    indices.add(this.positionIndex(ribon.frontButtons.rightBank));
+    indices.add(this.positionIndex(ribon.backButtons.center));
+    indices.add(this.positionIndex(ribon.backButtons.leftBank));
+    indices.add(this.positionIndex(ribon.backButtons.rightBank));
+
+    Iterator<Integer> it = indices.iterator();
+    while(it.hasNext()) {
+      this.placeRibonAt(it.next(), ribon);
+    }
+  }
+
+  void addRibons(ArrayList<Ribon> ribons) {
+    Iterator<Ribon> it = ribons.iterator();
+    while(it.hasNext()) {
+      this.addRibon(it.next());
+    }
+  }
+}
+
+PGraphics ribonsLayer, buttonsLayer, interactiveLayer;
 float LINEAR_DENSITY = 1.0 / 10; // 1 point every 10 pixels
 ArrayList<Ribon> ribons = new ArrayList<Ribon>();
 
 void setup() {
   size(800, 800);
   noFill();
-  layer1 = createGraphics(width, height);
-  layer2 = createGraphics(width, height);
+  ribonsLayer = createGraphics(width, height);
+  buttonsLayer = createGraphics(width, height);
 }
 
 float signedAngle(Vec2D pos) {
@@ -166,8 +233,8 @@ void draw() {
     endShape();
   }
 
-  image(layer1, 0, 0);
-  image(layer2, 0, 0);
+  image(ribonsLayer, 0, 0);
+  image(buttonsLayer, 0, 0);
 }
 
 Vec2D[] remapCurve(Vec2D[] curve, Vec2D targetPointA, Vec2D targetPointB) {
@@ -206,37 +273,41 @@ void mousePressed() {
 }
 
 void printRibons() {
-  layer1.beginDraw();
-  layer1.clear();
-  layer1.endDraw();
+  ribonsLayer.beginDraw();
+  ribonsLayer.clear();
+  ribonsLayer.endDraw();
   Ribon currentRibon;
   for (int i = 0; i < ribons.size(); i++) {
     currentRibon = ribons.get(i);
-    layer1.beginDraw();
-    currentRibon.displayCurve(layer1);
-    layer1.endDraw();
+    ribonsLayer.beginDraw();
+    currentRibon.displayCurve(ribonsLayer);
+    ribonsLayer.endDraw();
   }
 }
 
 void printRibonButtons() {
   Ribon currentRibon;
-  layer2.beginDraw();
-  layer2.clear();
-  layer2.endDraw();
+  buttonsLayer.beginDraw();
+  buttonsLayer.clear();
+  buttonsLayer.endDraw();
   for (int i = 0; i < ribons.size(); i++) {
     currentRibon = ribons.get(i);
-    layer2.beginDraw();
-    currentRibon.displayEndButtons(layer2);
-    layer2.endDraw();
+    buttonsLayer.beginDraw();
+    currentRibon.displayEndButtons(buttonsLayer);
+    buttonsLayer.endDraw();
   }
 }
 
 void mouseReleased() {
   resampledCurve = densityResample(curve, 1.0 / 10);
   Ribon newRibon = new Ribon(LINEAR_DENSITY);
-  newRibon.addToBack(curve);
+  newRibon.addFirstCurve(curve);
   newRibon.computeEndButtons(20);
   ribons.add(newRibon);
+
+  ribonEndPositions = new RibonEndPositions(width, height);
+  ribonEndPositions.addRibons(ribons);
+
   printRibons();
   printRibonButtons();
 }
