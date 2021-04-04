@@ -3,26 +3,59 @@ import toxi.geom.*;
 ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
 Vec2D[] resampledCurve = null;
 
+class RibonEndButtons {
+  Vec2D rightBank, leftBank, center;
+  RibonEndButtons () {}
+}
+
 class Ribon {
   float linearDensity;
   ArrayList<Vec2D[]> curves = new ArrayList<Vec2D[]>();
+  RibonEndButtons frontButtons = null;
+  RibonEndButtons backButtons = null;
 
   Ribon(float linearDensity) {
     this.linearDensity = linearDensity;
   }
 
-  void addToEnd(ArrayList<Vec2D> curve) {
+  void addToBack(ArrayList<Vec2D> curve) {
+    Vec2D[] processedCurve;
+
+    int curvesLen = this.curves.size();
     Vec2D[] resampledCurve = densityResample(curve, linearDensity);
-    this.curves.add(resampledCurve);
+    if (curvesLen != 0) {
+      Vec2D[] endCurve = this.curves.get(curvesLen - 1);
+      Vec2D referencePoint = endCurve[endCurve.length - 1];
+      Vec2D translation = referencePoint.sub(resampledCurve[0]);
+      // translate
+      processedCurve = new Vec2D[resampledCurve.length];
+      for (int i = 0; i < resampledCurve.length; i++) {
+        processedCurve[i] = resampledCurve[i].add(translation);
+      }
+    } else {
+      processedCurve = resampledCurve;
+    }
+
+    this.curves.add(processedCurve);
   }
 
   void addToFront(ArrayList<Vec2D> curve) {
     Vec2D[] resampledCurve = densityResample(curve, linearDensity);
-    Vec2D[] reverse = new Vec2D[resampledCurve.length];
-    for (int i = 0; i < resampledCurve.length; i++) {
-      reverse[i] = resampledCurve[resampledCurve.length - i - 1];
+    Vec2D translation = new Vec2D(0, 0);
+
+    if (this.curves.size() != 0) {
+      Vec2D[] frontCurve = this.curves.get(0);
+      Vec2D referencePoint = frontCurve[0];
+      translation = referencePoint.sub(resampledCurve[0]);
     }
-    this.curves.add(0, reverse);
+
+    // Reverse and translate
+    Vec2D[] processedCurve = new Vec2D[resampledCurve.length];
+    for (int i = 0; i < resampledCurve.length; i++) {
+      processedCurve[i] = resampledCurve[resampledCurve.length - i - 1].add(translation);
+    }
+
+    this.curves.add(0, processedCurve);
   }
 
   void displayCurve(PGraphics layer) {
@@ -47,20 +80,35 @@ class Ribon {
     layer.endShape();
   }
 
-  Vec2D[] getButtonsPositions(float ribonWid) {
+  void computeEndButtons(float ribonWid) {
     int len = this.curves.size();
     Vec2D[] firstCurve = this.curves.get(0);
     Vec2D[] lastCurve = this.curves.get(len - 1);
-    Vec2D[] buttonsPositions = new Vec2D[6];
 
-    buttonsPositions[0] = firstCurve[0];
-    buttonsPositions[1] = firstCurve[0].add(firstCurve[1].sub(firstCurve[0])).getRotated(PI).getNormalizedTo(ribonWid / 2);
-    buttonsPositions[2] = firstCurve[0].add(firstCurve[1].sub(firstCurve[0])).getRotated(-PI).getNormalizedTo(ribonWid / 2);
-    buttonsPositions[3] = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1])).getRotated(PI).getNormalizedTo(ribonWid / 2);
-    buttonsPositions[4] = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1])).getRotated(-PI).getNormalizedTo(ribonWid / 2);
-    buttonsPositions[5] = lastCurve[lastCurve.length - 1];
+    this.frontButtons = new RibonEndButtons();
+    this.backButtons = new RibonEndButtons();
 
-    return buttonsPositions;
+    this.frontButtons.center = firstCurve[0];
+    this.frontButtons.leftBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(HALF_PI).getNormalizedTo(ribonWid / 2));
+    this.frontButtons.rightBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(-HALF_PI).getNormalizedTo(ribonWid / 2));
+    this.backButtons.rightBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(HALF_PI).getNormalizedTo(ribonWid / 2));
+    this.backButtons.leftBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(-HALF_PI).getNormalizedTo(ribonWid / 2));
+    this.backButtons.center = lastCurve[lastCurve.length - 1];
+  }
+
+  void displayEndButtons(PGraphics layer) {
+    if (this.frontButtons != null && this.backButtons != null) {
+      layer.noStroke();
+      layer.fill(255, 0, 0);
+      layer.circle(this.frontButtons.center.x, this.frontButtons.center.y, 5);
+      layer.circle(this.backButtons.center.x, this.backButtons.center.y, 5);
+      layer.fill(0, 255, 0);
+      layer.circle(this.frontButtons.rightBank.x, this.frontButtons.rightBank.y, 5);
+      layer.circle(this.backButtons.rightBank.x, this.backButtons.rightBank.y, 5);
+      layer.fill(0, 0, 255);
+      layer.circle(this.frontButtons.leftBank.x, this.frontButtons.leftBank.y, 5);
+      layer.circle(this.backButtons.leftBank.x, this.backButtons.leftBank.y, 5);
+    }
   }
 }
 
@@ -106,7 +154,13 @@ void draw() {
   ribon.displayCurve(layer1);
   layer1.endDraw();
 
+  layer2.beginDraw();
+  layer2.clear();
+  ribon.displayEndButtons(layer2);
+  layer2.endDraw();
+
   image(layer1, 0, 0);
+  image(layer2, 0, 0);
 }
 
 Vec2D[] remapCurve(Vec2D[] curve, Vec2D targetPointA, Vec2D targetPointB) {
@@ -146,5 +200,6 @@ void mousePressed() {
 
 void mouseReleased() {
   resampledCurve = densityResample(curve, 1.0 / 10);
-  ribon.addToEnd(curve);
+  ribon.addToBack(curve);
+  ribon.computeEndButtons(20);
 }
