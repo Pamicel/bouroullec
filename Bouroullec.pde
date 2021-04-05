@@ -37,56 +37,55 @@ class RibonEndButtons {
 }
 
 class Ribon {
-  float linearDensity;
   ArrayList<Vec2D[]> curves = new ArrayList<Vec2D[]>();
-  RibonEndButtons frontButtons = null;
-  RibonEndButtons backButtons = null;
+  ArrayList<Vec2D[]> normals = new ArrayList<Vec2D[]>();
+  RibonEndButtons frontButtons = null,
+                  backButtons = null;
+  Ribon leftRibon = null,
+        rightRibon = null;
 
-  Ribon(float linearDensity) {
-    this.linearDensity = linearDensity;
-  }
-
-  void addFirstCurve(ArrayList<Vec2D> curve) {
+  Ribon(Vec2D[] curve) {
     this.addToBack(curve);
   }
 
-  void addToBack(ArrayList<Vec2D> curve) {
+  void addToBack(Vec2D[] curve) {
     Vec2D[] processedCurve;
 
     int curvesLen = this.curves.size();
-    Vec2D[] resampledCurve = densityResample(curve, linearDensity);
     if (curvesLen != 0) {
       Vec2D[] endCurve = this.curves.get(curvesLen - 1);
       Vec2D referencePoint = endCurve[endCurve.length - 1];
-      Vec2D translation = referencePoint.sub(resampledCurve[0]);
+      Vec2D translation = referencePoint.sub(curve[0]);
       // translate
-      processedCurve = new Vec2D[resampledCurve.length];
-      for (int i = 0; i < resampledCurve.length; i++) {
-        processedCurve[i] = resampledCurve[i].add(translation);
+      processedCurve = new Vec2D[curve.length];
+      for (int i = 0; i < curve.length; i++) {
+        processedCurve[i] = curve[i].add(translation);
       }
     } else {
-      processedCurve = resampledCurve;
+      processedCurve = curve;
     }
 
+    this.normals.add(this.computeCurveNormals(processedCurve));
     this.curves.add(processedCurve);
   }
 
-  void addToFront(ArrayList<Vec2D> curve) {
-    Vec2D[] resampledCurve = densityResample(curve, linearDensity);
+  void addToFront(Vec2D[] curve) {
     Vec2D translation = new Vec2D(0, 0);
 
     if (this.curves.size() != 0) {
       Vec2D[] frontCurve = this.curves.get(0);
       Vec2D referencePoint = frontCurve[0];
-      translation = referencePoint.sub(resampledCurve[0]);
+      translation = referencePoint.sub(curve[0]);
     }
 
     // Reverse and translate
-    Vec2D[] processedCurve = new Vec2D[resampledCurve.length];
-    for (int i = 0; i < resampledCurve.length; i++) {
-      processedCurve[i] = resampledCurve[resampledCurve.length - i - 1].add(translation);
+    Vec2D[] processedCurve = new Vec2D[curve.length];
+    for (int i = 0; i < curve.length; i++) {
+      processedCurve[i] = curve[curve.length - i - 1].add(translation);
     }
 
+
+    this.normals.add(0, this.computeCurveNormals(processedCurve));
     this.curves.add(0, processedCurve);
   }
 
@@ -110,6 +109,59 @@ class Ribon {
       }
     }
     layer.endShape();
+  }
+
+  void displayNormals(PGraphics layer, int len) {
+    int normalsLen = this.normals.size();
+    Vec2D start, end;
+    Vec2D[] currentNormals, currentCurve;
+
+    for (int index = 0; index < normalsLen; index++) {
+      currentNormals = this.normals.get(index);
+      currentCurve = this.curves.get(index);
+      for (int i = 0; i < currentNormals.length; i++) {
+        start = currentCurve[i];
+        end = start.add(currentNormals[i].getNormalizedTo(len));
+        layer.line(start.x, start.y, end.x, end.y);
+        layer.push();
+        layer.fill(255, 0, 0);
+        layer.noStroke();
+        layer.circle(end.x, end.y, 3);
+        layer.pop();
+      }
+    }
+  }
+
+  Ribon createLeftRibon(int ribonWid, float linearDensity) {
+    Ribon newRibon = null;
+    for (int i = 0; i < this.curves.size(); i++) {
+      Vec2D[] currentCurve = this.curves.get(i);
+      Vec2D[] currentNormals = this.normals.get(i);
+      Vec2D[] newCurve = new Vec2D[currentCurve.length];
+      for (int index = 0; index < newCurve.length; index++) {
+        newCurve[index] = currentCurve[index].copy().add(currentNormals[index].getNormalizedTo(ribonWid));
+      }
+      newCurve = densityResample(newCurve, linearDensity);
+
+      if (newRibon == null) {
+        newRibon = new Ribon(newCurve);
+      } else {
+        newRibon.addToBack(newCurve);
+      }
+    }
+
+    return newRibon;
+  }
+
+  private Vec2D[] computeCurveNormals(Vec2D[] curve) {
+    Vec2D[] curveNormals = new Vec2D[curve.length];
+    curveNormals[0] = curve[0].sub(curve[1]).getRotated(HALF_PI).getNormalized();
+    curveNormals[curve.length - 1] = curve[curve.length - 2].sub(curve[curve.length - 1]).getRotated(HALF_PI).getNormalized();
+    for (int i = 1; i < curve.length - 1; i++) {
+      curveNormals[i] = curve[i - 1].sub(curve[i + 1]).getRotated(HALF_PI).getNormalized();
+    }
+
+    return curveNormals;
   }
 
   void computeEndButtons(float ribonWid) {
@@ -281,6 +333,7 @@ void printRibons() {
     currentRibon = ribons.get(i);
     ribonsLayer.beginDraw();
     currentRibon.displayCurve(ribonsLayer);
+    currentRibon.displayNormals(ribonsLayer, 10);
     ribonsLayer.endDraw();
   }
 }
@@ -299,11 +352,20 @@ void printRibonButtons() {
 }
 
 void mouseReleased() {
-  resampledCurve = densityResample(curve, 1.0 / 10);
-  Ribon newRibon = new Ribon(LINEAR_DENSITY);
-  newRibon.addFirstCurve(curve);
+  if (curve.size() <= 1) {
+    return;
+  }
+  float linearDensity = 1.0 / 10;
+  resampledCurve = densityResample(curve, linearDensity);
+  if (resampledCurve.length <= 1) {
+    return;
+  }
+  Ribon newRibon = new Ribon(resampledCurve);
   newRibon.computeEndButtons(20);
   ribons.add(newRibon);
+  Ribon leftRibon = newRibon.createLeftRibon(20, linearDensity);
+  leftRibon.computeEndButtons(20);
+  ribons.add(leftRibon);
 
   ribonEndPositions = new RibonEndPositions(width, height);
   ribonEndPositions.addRibons(ribons);

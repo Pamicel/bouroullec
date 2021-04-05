@@ -1,22 +1,43 @@
 Vec2D[] densityResample(ArrayList<Vec2D> curve, float linearDensity) {
-  float distSum = 0;
   int curveLen = curve.size();
+  Vec2D[] arrayCurve = new Vec2D[curveLen];
+
+  return densityResample(curve.toArray(arrayCurve), linearDensity);
+}
+
+Vec2D[] regularResample (ArrayList<Vec2D> curve, int newLen) {
+  int curveLen = curve.size();
+  Vec2D[] arrayCurve = new Vec2D[curveLen];
+
+  return regularResample(curve.toArray(arrayCurve), newLen);
+}
+
+Vec2D[] resample (ArrayList<Vec2D> curve, int newLen) {
+  int curveLen = curve.size();
+  Vec2D[] arrayCurve = new Vec2D[curveLen];
+
+  return resample(curve.toArray(arrayCurve), newLen);
+}
+
+Vec2D[] densityResample(Vec2D[] curve, float linearDensity) {
+  float distSum = 0;
+  int curveLen = curve.length;
   for (int i = 0; i < curveLen - 1; i++) {
-    distSum += curve.get(i).distanceTo(curve.get(i + 1));
+    distSum += curve[i].distanceTo(curve[i + 1]);
   }
   int resampleSize = floor(linearDensity * distSum);
   return regularResample(curve, resampleSize);
 }
 
-Vec2D[] regularResample (ArrayList<Vec2D> curve, int newLen) {
-  int currentLen = curve.size();
+Vec2D[] regularResample (Vec2D[] curve, int newLen) {
+  int currentLen = curve.length;
   float maxDist = 0;
   float minDist = 0;
 
-  Vec2D pointA = curve.get(0);
+  Vec2D pointA = curve[0];
   Vec2D pointB;
   for (int i = 1; i < currentLen - 1; i++) {
-    pointB = curve.get(i);
+    pointB = curve[i];
     float distance = pointA.distanceTo(pointB);
     if (minDist == 0 || distance < minDist) {
       minDist = distance;
@@ -53,8 +74,8 @@ Vec2D[] regularResample (ArrayList<Vec2D> curve, int newLen) {
   return resample(curve, newLen);
 }
 
-Vec2D[] resample (ArrayList<Vec2D> curve, int newLen) {
-  int currentLen = curve.size();
+Vec2D[] resample (Vec2D[] curve, int newLen) {
+  int currentLen = curve.length;
   // Ratio of current num of segments and desired num of segments
   float ratio = (float)(currentLen - 1) / (float)(newLen - 1);
   Vec2D[] newCurve = new Vec2D[newLen];
@@ -75,8 +96,8 @@ Vec2D[] resample (ArrayList<Vec2D> curve, int newLen) {
     }
 
     dfIndex = fIndex - minIndex; // decimal part of the floating index
-    minPoint = curve.get(minIndex);
-    maxPoint = curve.get(maxIndex);
+    minPoint = curve[minIndex];
+    maxPoint = curve[maxIndex];
     newCurve[i] = new Vec2D(
       maxPoint.x * dfIndex + minPoint.x * (1 - dfIndex),
       maxPoint.y * dfIndex + minPoint.y * (1 - dfIndex)
