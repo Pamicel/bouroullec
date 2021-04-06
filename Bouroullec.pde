@@ -397,7 +397,8 @@ void mouseReleased() {
   if (!drewCurve || emptyResample) {
     ArrayList<Ribon> ribonsHere = ribonEndPositions.getRibonsAt(mouseX, mouseY);
     Ribon current;
-    for (int i = 0; i < ribonsHere.size(); i++) {
+    int nRibonsHere = ribonsHere != null ? ribonsHere.size() : 0;
+    for (int i = 0; i < nRibonsHere; i++) {
       current = ribonsHere.get(i);
       if (current.frontButtons.isHoverLeftBank(mouseX, mouseY) || current.backButtons.isHoverLeftBank(mouseX, mouseY)) {
         println("clicked left button");
