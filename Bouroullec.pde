@@ -44,6 +44,8 @@ class Ribon {
   Ribon leftRibon = null,
         rightRibon = null;
 
+  float ribonWid = 5.0;
+
   Ribon(Vec2D[] curve) {
     this.addToBack(curve);
   }
@@ -104,7 +106,7 @@ class Ribon {
       currentCurve = this.curves.get(curveIndex);
       for (int i = 0; i < currentCurve.length; i++) {
         pos = currentCurve[i];
-        layer.circle(pos.x, pos.y, 5);
+        layer.circle(pos.x, pos.y, this.ribonWid / 10);
         layer.vertex(pos.x, pos.y);
       }
     }
@@ -132,14 +134,14 @@ class Ribon {
     }
   }
 
-  Ribon createLeftRibon(int ribonWid, float linearDensity) {
+  Ribon createLeftRibon(float linearDensity) {
     Ribon newRibon = null;
     for (int i = 0; i < this.curves.size(); i++) {
       Vec2D[] currentCurve = this.curves.get(i);
       Vec2D[] currentNormals = this.normals.get(i);
       Vec2D[] newCurve = new Vec2D[currentCurve.length];
       for (int index = 0; index < newCurve.length; index++) {
-        newCurve[index] = currentCurve[index].copy().add(currentNormals[index].getNormalizedTo(ribonWid));
+        newCurve[index] = currentCurve[index].copy().add(currentNormals[index].getNormalizedTo(this.ribonWid));
       }
       newCurve = densityResample(newCurve, linearDensity);
 
@@ -164,7 +166,7 @@ class Ribon {
     return curveNormals;
   }
 
-  void computeEndButtons(float ribonWid) {
+  void computeEndButtons() {
     int len = this.curves.size();
     Vec2D[] firstCurve = this.curves.get(0);
     Vec2D[] lastCurve = this.curves.get(len - 1);
@@ -173,10 +175,10 @@ class Ribon {
     this.backButtons = new RibonEndButtons();
 
     this.frontButtons.center = firstCurve[0];
-    this.frontButtons.leftBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(HALF_PI).getNormalizedTo(ribonWid / 2));
-    this.frontButtons.rightBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(-HALF_PI).getNormalizedTo(ribonWid / 2));
-    this.backButtons.rightBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(HALF_PI).getNormalizedTo(ribonWid / 2));
-    this.backButtons.leftBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(-HALF_PI).getNormalizedTo(ribonWid / 2));
+    this.frontButtons.leftBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(HALF_PI).getNormalizedTo(this.ribonWid / 2));
+    this.frontButtons.rightBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(-HALF_PI).getNormalizedTo(this.ribonWid / 2));
+    this.backButtons.rightBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(HALF_PI).getNormalizedTo(this.ribonWid / 2));
+    this.backButtons.leftBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(-HALF_PI).getNormalizedTo(this.ribonWid / 2));
     this.backButtons.center = lastCurve[lastCurve.length - 1];
   }
 
@@ -355,16 +357,16 @@ void mouseReleased() {
   if (curve.size() <= 1) {
     return;
   }
-  float linearDensity = 1.0 / 10;
+  float linearDensity = 1.0 / 5;
   resampledCurve = densityResample(curve, linearDensity);
   if (resampledCurve.length <= 1) {
     return;
   }
   Ribon newRibon = new Ribon(resampledCurve);
-  newRibon.computeEndButtons(20);
+  newRibon.computeEndButtons();
   ribons.add(newRibon);
-  Ribon leftRibon = newRibon.createLeftRibon(20, linearDensity);
-  leftRibon.computeEndButtons(20);
+  Ribon leftRibon = newRibon.createLeftRibon(linearDensity);
+  leftRibon.computeEndButtons();
   ribons.add(leftRibon);
 
   ribonEndPositions = new RibonEndPositions(width, height);
@@ -372,4 +374,12 @@ void mouseReleased() {
 
   printRibons();
   printRibonButtons();
+}
+
+void keyPressed() {
+  if (key == ' ') {
+    int date = (year() % 100) * 10000 + month() * 100 + day();
+    int time = hour() * 10000 + minute() * 100 + second();
+    saveFrame("out/date-"+ date + "_time-"+ time);
+  }
 }
