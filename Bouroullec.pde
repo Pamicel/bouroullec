@@ -19,10 +19,10 @@ class RibonEndButtons {
     return this.isHover(this.leftBank, mX, mY);
   }
   boolean isHoverRightBank(int mX, int mY) {
-    return this.isHover(this.leftBank, mX, mY);
+    return this.isHover(this.rightBank, mX, mY);
   }
   boolean isHoverCenter(int mX, int mY) {
-    return this.isHover(this.leftBank, mX, mY);
+    return this.isHover(this.center, mX, mY);
   }
 
   void display(PGraphics layer) {
@@ -44,7 +44,7 @@ class Ribon {
   Ribon leftRibon = null,
         rightRibon = null;
 
-  float ribonWid = 5.0;
+  float ribonWid = 20.0;
 
   Ribon(Vec2D[] curve) {
     this.addToBack(curve);
@@ -155,6 +155,27 @@ class Ribon {
     return newRibon;
   }
 
+  Ribon createRightRibon(float linearDensity) {
+    Ribon newRibon = null;
+    for (int i = 0; i < this.curves.size(); i++) {
+      Vec2D[] currentCurve = this.curves.get(i);
+      Vec2D[] currentNormals = this.normals.get(i);
+      Vec2D[] newCurve = new Vec2D[currentCurve.length];
+      for (int index = 0; index < newCurve.length; index++) {
+        newCurve[index] = currentCurve[index].copy().sub(currentNormals[index].getNormalizedTo(this.ribonWid));
+      }
+      newCurve = densityResample(newCurve, linearDensity);
+
+      if (newRibon == null) {
+        newRibon = new Ribon(newCurve);
+      } else {
+        newRibon.addToBack(newCurve);
+      }
+    }
+
+    return newRibon;
+  }
+
   private Vec2D[] computeCurveNormals(Vec2D[] curve) {
     Vec2D[] curveNormals = new Vec2D[curve.length];
     curveNormals[0] = curve[0].sub(curve[1]).getRotated(HALF_PI).getNormalized();
@@ -175,10 +196,10 @@ class Ribon {
     this.backButtons = new RibonEndButtons();
 
     this.frontButtons.center = firstCurve[0];
-    this.frontButtons.leftBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(HALF_PI).getNormalizedTo(this.ribonWid / 2));
-    this.frontButtons.rightBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(-HALF_PI).getNormalizedTo(this.ribonWid / 2));
-    this.backButtons.rightBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(HALF_PI).getNormalizedTo(this.ribonWid / 2));
-    this.backButtons.leftBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(-HALF_PI).getNormalizedTo(this.ribonWid / 2));
+    this.frontButtons.leftBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(-HALF_PI).getNormalizedTo(this.ribonWid / 2));
+    this.frontButtons.rightBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(HALF_PI).getNormalizedTo(this.ribonWid / 2));
+    this.backButtons.rightBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(-HALF_PI).getNormalizedTo(this.ribonWid / 2));
+    this.backButtons.leftBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(HALF_PI).getNormalizedTo(this.ribonWid / 2));
     this.backButtons.center = lastCurve[lastCurve.length - 1];
   }
 
@@ -213,6 +234,7 @@ class RibonEndPositions {
   }
 
   private void placeRibonAt(int index, Ribon ribon) {
+    if (index < 0) return;
     if (this.ribons[index] == null) {
       this.ribons[index] = new ArrayList<Ribon>();
     }
@@ -221,6 +243,7 @@ class RibonEndPositions {
 
   ArrayList<Ribon> getRibonsAt(int mX, int mY) {
     int index = this.positionIndex(new Vec2D(mX, mY));
+    if (index < 0) return null;
     if (this.ribons[index] != null) {
       return this.ribons[index];
     }
@@ -353,24 +376,52 @@ void printRibonButtons() {
   }
 }
 
-void mouseReleased() {
-  if (curve.size() <= 1) {
-    return;
-  }
-  float linearDensity = 1.0 / 5;
-  resampledCurve = densityResample(curve, linearDensity);
-  if (resampledCurve.length <= 1) {
-    return;
-  }
-  Ribon newRibon = new Ribon(resampledCurve);
+void addNewRibon(Ribon newRibon) {
   newRibon.computeEndButtons();
   ribons.add(newRibon);
-  Ribon leftRibon = newRibon.createLeftRibon(linearDensity);
-  leftRibon.computeEndButtons();
-  ribons.add(leftRibon);
-
   ribonEndPositions = new RibonEndPositions(width, height);
   ribonEndPositions.addRibons(ribons);
+}
+
+void mouseReleased() {
+  float linearDensity = 1.0 / 20;
+  Ribon newRibon;
+
+  boolean drewCurve = curve.size() > 1;
+  boolean emptyResample = false;
+  if (drewCurve) {
+    resampledCurve = densityResample(curve, linearDensity);
+    emptyResample = resampledCurve.length <= 1;
+  }
+
+  if (!drewCurve || emptyResample) {
+    ArrayList<Ribon> ribonsHere = ribonEndPositions.getRibonsAt(mouseX, mouseY);
+    Ribon current;
+    for (int i = 0; i < ribonsHere.size(); i++) {
+      current = ribonsHere.get(i);
+      if (current.frontButtons.isHoverLeftBank(mouseX, mouseY) || current.backButtons.isHoverLeftBank(mouseX, mouseY)) {
+        println("clicked left button");
+        newRibon = current.createLeftRibon(linearDensity);
+        println(newRibon);
+        addNewRibon(newRibon);
+      }
+      if (current.frontButtons.isHoverRightBank(mouseX, mouseY) || current.backButtons.isHoverRightBank(mouseX, mouseY)) {
+        // return;
+      };
+    }
+  }
+
+  else if (!emptyResample) {
+    newRibon = new Ribon(resampledCurve);
+    addNewRibon(newRibon);
+
+    // Ribon leftRibon = newRibon.createLeftRibon(linearDensity);
+    // leftRibon.computeEndButtons();
+    // ribons.add(leftRibon);
+
+    // ribonEndPositions = new RibonEndPositions(width, height);
+    // ribonEndPositions.addRibons(ribons);
+  }
 
   printRibons();
   printRibonButtons();
