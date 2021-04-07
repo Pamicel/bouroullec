@@ -130,7 +130,6 @@ class DisplayWindow extends PApplet {
   }
 
   void addNewRibbon(Ribbon newRibbon) {
-    newRibbon.computeEndButtons();
     ribbons.add(newRibbon);
     ribbonEndPositions = new RibbonEndPositions(width, height);
     ribbonEndPositions.addRibbons(ribbons);
@@ -156,10 +155,14 @@ class DisplayWindow extends PApplet {
         current = ribbonsHere.get(i);
         if (current.frontButtons.isHoverLeftBank(mouseX, mouseY) || current.backButtons.isHoverLeftBank(mouseX, mouseY)) {
           newRibbon = current.createLeftRibbon(linearDensity, variationCurve);
+          current.assignLeftRibbon(newRibbon);
+          newRibbon.assignRightRibbon(current);
           addNewRibbon(newRibbon);
         }
         if (current.frontButtons.isHoverRightBank(mouseX, mouseY) || current.backButtons.isHoverRightBank(mouseX, mouseY)) {
           newRibbon = current.createRightRibbon(linearDensity, variationCurve);
+          current.assignRightRibbon(newRibbon);
+          newRibbon.assignLeftRibbon(current);
           addNewRibbon(newRibbon);
         };
       }
