@@ -235,6 +235,7 @@ class RibonEndPositions {
 
   private void placeRibonAt(int index, Ribon ribon) {
     if (index < 0) return;
+    if (index >= nw * nh) return;
     if (this.ribons[index] == null) {
       this.ribons[index] = new ArrayList<Ribon>();
     }
@@ -401,13 +402,14 @@ void mouseReleased() {
     for (int i = 0; i < nRibonsHere; i++) {
       current = ribonsHere.get(i);
       if (current.frontButtons.isHoverLeftBank(mouseX, mouseY) || current.backButtons.isHoverLeftBank(mouseX, mouseY)) {
-        println("clicked left button");
         newRibon = current.createLeftRibon(linearDensity);
         println(newRibon);
         addNewRibon(newRibon);
       }
       if (current.frontButtons.isHoverRightBank(mouseX, mouseY) || current.backButtons.isHoverRightBank(mouseX, mouseY)) {
-        // return;
+        newRibon = current.createRightRibon(linearDensity);
+        println(newRibon);
+        addNewRibon(newRibon);
       };
     }
   }
