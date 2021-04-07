@@ -21,10 +21,10 @@ class DisplayWindow extends PApplet {
 
   ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
   Vec2D[] resampledCurve = null;
-  RibonEndPositions ribonEndPositions;
-  PGraphics ribonsLayer, buttonsLayer, interactiveLayer;
+  RibbonEndPositions ribbonEndPositions;
+  PGraphics ribbonsLayer, buttonsLayer, interactiveLayer;
   float LINEAR_DENSITY = 1.0 / 10; // 1 point every 10 pixels
-  ArrayList<Ribon> ribons = new ArrayList<Ribon>();
+  ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>();
 
   void settings () {
     size(800, 800);
@@ -33,7 +33,7 @@ class DisplayWindow extends PApplet {
   void setup() {
     noFill();
     this.surface.setLocation(100, 100);
-    ribonsLayer = createGraphics(width, height);
+    ribbonsLayer = createGraphics(width, height);
     buttonsLayer = createGraphics(width, height);
   }
 
@@ -63,7 +63,7 @@ class DisplayWindow extends PApplet {
       endShape();
     }
 
-    image(ribonsLayer, 0, 0);
+    image(ribbonsLayer, 0, 0);
     image(buttonsLayer, 0, 0);
   }
 
@@ -102,43 +102,43 @@ class DisplayWindow extends PApplet {
     curve.add(new Vec2D(mouseX, mouseY));
   }
 
-  void printRibons() {
-    ribonsLayer.beginDraw();
-    ribonsLayer.clear();
-    ribonsLayer.endDraw();
-    Ribon currentRibon;
-    for (int i = 0; i < ribons.size(); i++) {
-      currentRibon = ribons.get(i);
-      ribonsLayer.beginDraw();
-      currentRibon.displayCurve(ribonsLayer);
-      currentRibon.displayNormals(ribonsLayer, 10);
-      ribonsLayer.endDraw();
+  void printRibbons() {
+    ribbonsLayer.beginDraw();
+    ribbonsLayer.clear();
+    ribbonsLayer.endDraw();
+    Ribbon currentRibbon;
+    for (int i = 0; i < ribbons.size(); i++) {
+      currentRibbon = ribbons.get(i);
+      ribbonsLayer.beginDraw();
+      currentRibbon.displayCurve(ribbonsLayer);
+      currentRibbon.displayNormals(ribbonsLayer, 10);
+      ribbonsLayer.endDraw();
     }
   }
 
-  void printRibonButtons() {
-    Ribon currentRibon;
+  void printRibbonButtons() {
+    Ribbon currentRibbon;
     buttonsLayer.beginDraw();
     buttonsLayer.clear();
     buttonsLayer.endDraw();
-    for (int i = 0; i < ribons.size(); i++) {
-      currentRibon = ribons.get(i);
+    for (int i = 0; i < ribbons.size(); i++) {
+      currentRibbon = ribbons.get(i);
       buttonsLayer.beginDraw();
-      currentRibon.displayEndButtons(buttonsLayer);
+      currentRibbon.displayEndButtons(buttonsLayer);
       buttonsLayer.endDraw();
     }
   }
 
-  void addNewRibon(Ribon newRibon) {
-    newRibon.computeEndButtons();
-    ribons.add(newRibon);
-    ribonEndPositions = new RibonEndPositions(width, height);
-    ribonEndPositions.addRibons(ribons);
+  void addNewRibbon(Ribbon newRibbon) {
+    newRibbon.computeEndButtons();
+    ribbons.add(newRibbon);
+    ribbonEndPositions = new RibbonEndPositions(width, height);
+    ribbonEndPositions.addRibbons(ribbons);
   }
 
   void mouseReleased() {
     float linearDensity = 1.0 / 20;
-    Ribon newRibon;
+    Ribbon newRibbon;
 
     boolean drewCurve = curve.size() > 1;
     boolean emptyResample = false;
@@ -148,37 +148,37 @@ class DisplayWindow extends PApplet {
     }
 
     if (!drewCurve || emptyResample) {
-      ArrayList<Ribon> ribonsHere = ribonEndPositions.getRibonsAt(mouseX, mouseY);
+      ArrayList<Ribbon> ribbonsHere = ribbonEndPositions.getRibbonsAt(mouseX, mouseY);
       Vec2D[] variationCurve = toolWindow.getYNormalizedCurve();
-      Ribon current;
-      int nRibonsHere = ribonsHere != null ? ribonsHere.size() : 0;
-      for (int i = 0; i < nRibonsHere; i++) {
-        current = ribonsHere.get(i);
+      Ribbon current;
+      int nRibbonsHere = ribbonsHere != null ? ribbonsHere.size() : 0;
+      for (int i = 0; i < nRibbonsHere; i++) {
+        current = ribbonsHere.get(i);
         if (current.frontButtons.isHoverLeftBank(mouseX, mouseY) || current.backButtons.isHoverLeftBank(mouseX, mouseY)) {
-          newRibon = current.createLeftRibon(linearDensity, variationCurve);
-          addNewRibon(newRibon);
+          newRibbon = current.createLeftRibbon(linearDensity, variationCurve);
+          addNewRibbon(newRibbon);
         }
         if (current.frontButtons.isHoverRightBank(mouseX, mouseY) || current.backButtons.isHoverRightBank(mouseX, mouseY)) {
-          newRibon = current.createRightRibon(linearDensity, variationCurve);
-          addNewRibon(newRibon);
+          newRibbon = current.createRightRibbon(linearDensity, variationCurve);
+          addNewRibbon(newRibbon);
         };
       }
     }
 
     else if (!emptyResample) {
-      newRibon = new Ribon(resampledCurve);
-      addNewRibon(newRibon);
+      newRibbon = new Ribbon(resampledCurve);
+      addNewRibbon(newRibbon);
 
-      // Ribon leftRibon = newRibon.createLeftRibon(linearDensity);
-      // leftRibon.computeEndButtons();
-      // ribons.add(leftRibon);
+      // Ribbon leftRibbon = newRibbon.createLeftRibbon(linearDensity);
+      // leftRibbon.computeEndButtons();
+      // ribbons.add(leftRibbon);
 
-      // ribonEndPositions = new RibonEndPositions(width, height);
-      // ribonEndPositions.addRibons(ribons);
+      // ribbonEndPositions = new RibbonEndPositions(width, height);
+      // ribbonEndPositions.addRibbons(ribbons);
     }
 
-    printRibons();
-    printRibonButtons();
+    printRibbons();
+    printRibbonButtons();
   }
 
   void keyPressed() {

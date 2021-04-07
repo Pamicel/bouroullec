@@ -1,7 +1,7 @@
-class RibonEndButtons {
+class RibbonEndButtons {
   Vec2D rightBank, leftBank, center;
   float radius = 5;
-  RibonEndButtons () {}
+  RibbonEndButtons () {}
 
   private boolean isHover (Vec2D position, int mX, int mY) {
     return position.distanceToSquared(new Vec2D(mX, mY)) < (this.radius * this.radius);
@@ -28,17 +28,17 @@ class RibonEndButtons {
   }
 }
 
-class Ribon {
+class Ribbon {
   ArrayList<Vec2D[]> curves = new ArrayList<Vec2D[]>();
   ArrayList<Vec2D[]> normals = new ArrayList<Vec2D[]>();
-  RibonEndButtons frontButtons = null,
+  RibbonEndButtons frontButtons = null,
                   backButtons = null;
-  Ribon leftRibon = null,
-        rightRibon = null;
+  Ribbon leftRibbon = null,
+        rightRibbon = null;
 
-  float ribonWid = 20.0;
+  float ribbonWid = 20.0;
 
-  Ribon(Vec2D[] curve) {
+  Ribbon(Vec2D[] curve) {
     this.addToBack(curve);
   }
 
@@ -98,7 +98,7 @@ class Ribon {
       currentCurve = this.curves.get(curveIndex);
       for (int i = 0; i < currentCurve.length; i++) {
         pos = currentCurve[i];
-        layer.circle(pos.x, pos.y, this.ribonWid / 10);
+        layer.circle(pos.x, pos.y, this.ribbonWid / 10);
         layer.vertex(pos.x, pos.y);
       }
     }
@@ -126,66 +126,66 @@ class Ribon {
     }
   }
 
-  Ribon createLeftRibon(float linearDensity) {
-    Ribon newRibon = null;
+  Ribbon createLeftRibbon(float linearDensity) {
+    Ribbon newRibbon = null;
     for (int i = 0; i < this.curves.size(); i++) {
       Vec2D[] currentCurve = this.curves.get(i);
       Vec2D[] currentNormals = this.normals.get(i);
       Vec2D[] newCurve = new Vec2D[currentCurve.length];
       for (int index = 0; index < newCurve.length; index++) {
-        newCurve[index] = currentCurve[index].copy().add(currentNormals[index].getNormalizedTo(this.ribonWid));
+        newCurve[index] = currentCurve[index].copy().add(currentNormals[index].getNormalizedTo(this.ribbonWid));
       }
       newCurve = densityResample(newCurve, linearDensity);
 
-      if (newRibon == null) {
-        newRibon = new Ribon(newCurve);
+      if (newRibbon == null) {
+        newRibbon = new Ribbon(newCurve);
       } else {
-        newRibon.addToBack(newCurve);
+        newRibbon.addToBack(newCurve);
       }
     }
 
-    return newRibon;
+    return newRibbon;
   }
 
-  Ribon createRightRibon(float linearDensity) {
-    Ribon newRibon = null;
+  Ribbon createRightRibbon(float linearDensity) {
+    Ribbon newRibbon = null;
     for (int i = 0; i < this.curves.size(); i++) {
       Vec2D[] currentCurve = this.curves.get(i);
       Vec2D[] currentNormals = this.normals.get(i);
       Vec2D[] newCurve = new Vec2D[currentCurve.length];
       for (int index = 0; index < newCurve.length; index++) {
-        newCurve[index] = currentCurve[index].copy().sub(currentNormals[index].getNormalizedTo(this.ribonWid));
+        newCurve[index] = currentCurve[index].copy().sub(currentNormals[index].getNormalizedTo(this.ribbonWid));
       }
       newCurve = densityResample(newCurve, linearDensity);
 
-      if (newRibon == null) {
-        newRibon = new Ribon(newCurve);
+      if (newRibbon == null) {
+        newRibbon = new Ribbon(newCurve);
       } else {
-        newRibon.addToBack(newCurve);
+        newRibbon.addToBack(newCurve);
       }
     }
 
-    return newRibon;
+    return newRibbon;
   }
 
-  Ribon createRightRibon(float linearDensity, Vec2D[] variationCurve) {
-    Ribon newRibon = this.createRightRibon(linearDensity);
+  Ribbon createRightRibbon(float linearDensity, Vec2D[] variationCurve) {
+    Ribbon newRibbon = this.createRightRibbon(linearDensity);
     if (variationCurve != null) {
       // invert the variationCurve
       for (int i = 0; i < variationCurve.length; i++) {
         variationCurve[i] = variationCurve[i].getInverted();
       }
-      newRibon.applyVariationCurve(variationCurve);
+      newRibbon.applyVariationCurve(variationCurve);
     }
-    return newRibon;
+    return newRibbon;
   }
 
-  Ribon createLeftRibon(float linearDensity, Vec2D[] variationCurve) {
-    Ribon newRibon = this.createLeftRibon(linearDensity);
+  Ribbon createLeftRibbon(float linearDensity, Vec2D[] variationCurve) {
+    Ribbon newRibbon = this.createLeftRibbon(linearDensity);
     if (variationCurve != null) {
-      newRibon.applyVariationCurve(variationCurve);
+      newRibbon.applyVariationCurve(variationCurve);
     }
-    return newRibon;
+    return newRibbon;
   }
 
   void applyVariationCurve(Vec2D[] variationCurve) {
@@ -202,7 +202,7 @@ class Ribon {
       currentCurve = this.curves.get(i);
       currentNormals = this.normals.get(i);
       for (int j = 0; j < currentCurve.length; j++) {
-        currentCurve[j] = currentCurve[j].add(currentNormals[j].getNormalizedTo(this.ribonWid * resampledVariationCurve[vcIndex++].y));
+        currentCurve[j] = currentCurve[j].add(currentNormals[j].getNormalizedTo(this.ribbonWid * resampledVariationCurve[vcIndex++].y));
       }
     }
   }
@@ -223,14 +223,14 @@ class Ribon {
     Vec2D[] firstCurve = this.curves.get(0);
     Vec2D[] lastCurve = this.curves.get(len - 1);
 
-    this.frontButtons = new RibonEndButtons();
-    this.backButtons = new RibonEndButtons();
+    this.frontButtons = new RibbonEndButtons();
+    this.backButtons = new RibbonEndButtons();
 
     this.frontButtons.center = firstCurve[0];
-    this.frontButtons.leftBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(-HALF_PI).getNormalizedTo(this.ribonWid / 2));
-    this.frontButtons.rightBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(HALF_PI).getNormalizedTo(this.ribonWid / 2));
-    this.backButtons.rightBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(-HALF_PI).getNormalizedTo(this.ribonWid / 2));
-    this.backButtons.leftBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(HALF_PI).getNormalizedTo(this.ribonWid / 2));
+    this.frontButtons.leftBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(-HALF_PI).getNormalizedTo(this.ribbonWid / 2));
+    this.frontButtons.rightBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(HALF_PI).getNormalizedTo(this.ribbonWid / 2));
+    this.backButtons.rightBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(-HALF_PI).getNormalizedTo(this.ribbonWid / 2));
+    this.backButtons.leftBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(HALF_PI).getNormalizedTo(this.ribbonWid / 2));
     this.backButtons.center = lastCurve[lastCurve.length - 1];
   }
 
@@ -242,17 +242,17 @@ class Ribon {
   }
 }
 
-class RibonEndPositions {
+class RibbonEndPositions {
   int nw = 6, nh = 6;
-  ArrayList<Ribon>[] ribons;
+  ArrayList<Ribbon>[] ribbons;
   int areaW, areaH;
 
-  RibonEndPositions(int areaW, int areaH) {
+  RibbonEndPositions(int areaW, int areaH) {
     this.areaW = areaW;
     this.areaH = areaH;
-    this.ribons = new ArrayList[this.nw * this.nh];
-    for (int i = 0; i < this.ribons.length; i++) {
-      this.ribons[i] = null;
+    this.ribbons = new ArrayList[this.nw * this.nh];
+    for (int i = 0; i < this.ribbons.length; i++) {
+      this.ribbons[i] = null;
     }
   }
 
@@ -264,43 +264,43 @@ class RibonEndPositions {
     return xindex + this.nw * yindex;
   }
 
-  private void placeRibonAt(int index, Ribon ribon) {
+  private void placeRibbonAt(int index, Ribbon ribbon) {
     if (index < 0) return;
     if (index >= nw * nh) return;
-    if (this.ribons[index] == null) {
-      this.ribons[index] = new ArrayList<Ribon>();
+    if (this.ribbons[index] == null) {
+      this.ribbons[index] = new ArrayList<Ribbon>();
     }
-    this.ribons[index].add(ribon);
+    this.ribbons[index].add(ribbon);
   }
 
-  ArrayList<Ribon> getRibonsAt(int mX, int mY) {
+  ArrayList<Ribbon> getRibbonsAt(int mX, int mY) {
     int index = this.positionIndex(new Vec2D(mX, mY));
     if (index < 0) return null;
-    if (this.ribons[index] != null) {
-      return this.ribons[index];
+    if (this.ribbons[index] != null) {
+      return this.ribbons[index];
     }
     return null;
   }
 
-  void addRibon(Ribon ribon) {
+  void addRibbon(Ribbon ribbon) {
     HashSet<Integer> indices = new HashSet<Integer>();
-    indices.add(this.positionIndex(ribon.frontButtons.center));
-    indices.add(this.positionIndex(ribon.frontButtons.leftBank));
-    indices.add(this.positionIndex(ribon.frontButtons.rightBank));
-    indices.add(this.positionIndex(ribon.backButtons.center));
-    indices.add(this.positionIndex(ribon.backButtons.leftBank));
-    indices.add(this.positionIndex(ribon.backButtons.rightBank));
+    indices.add(this.positionIndex(ribbon.frontButtons.center));
+    indices.add(this.positionIndex(ribbon.frontButtons.leftBank));
+    indices.add(this.positionIndex(ribbon.frontButtons.rightBank));
+    indices.add(this.positionIndex(ribbon.backButtons.center));
+    indices.add(this.positionIndex(ribbon.backButtons.leftBank));
+    indices.add(this.positionIndex(ribbon.backButtons.rightBank));
 
     Iterator<Integer> it = indices.iterator();
     while(it.hasNext()) {
-      this.placeRibonAt(it.next(), ribon);
+      this.placeRibbonAt(it.next(), ribbon);
     }
   }
 
-  void addRibons(ArrayList<Ribon> ribons) {
-    Iterator<Ribon> it = ribons.iterator();
+  void addRibbons(ArrayList<Ribbon> ribbons) {
+    Iterator<Ribbon> it = ribbons.iterator();
     while(it.hasNext()) {
-      this.addRibon(it.next());
+      this.addRibbon(it.next());
     }
   }
 }
