@@ -1,6 +1,6 @@
 // Base class for a secondary window in Processing
-class ChildApplet extends PApplet {
-  public ChildApplet() {
+class ToolWindow extends PApplet {
+  public ToolWindow() {
     super();
     PApplet.runSketch(new String[]{this.getClass().getName()}, this);
   }
@@ -8,7 +8,7 @@ class ChildApplet extends PApplet {
   ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
   Vec2D[] finalCurve;
   PGraphics finalCurveLayer;
-
+  float linearDensity = 1.0 / 5;
   int xmin, xmax, padding;
 
   private int curveDirection(ArrayList<Vec2D> curve) {
@@ -101,7 +101,7 @@ class ChildApplet extends PApplet {
       shavedCurve.add(new Vec2D(maxX, lastPoint.y));
     }
 
-    this.finalCurve = densityResample(shavedCurve, 1.0 / 40);
+    this.finalCurve = densityResample(shavedCurve, this.linearDensity);
   }
 
   void drawFinalCurve (PGraphics layer) {
@@ -121,11 +121,14 @@ class ChildApplet extends PApplet {
     layer.endDraw();
   }
 
+  //
+
   void settings() {
     this.size(200, 200);
   }
 
   void setup() {
+    this.surface.setLocation(1000, 500);
     this.padding = 20;
     this.xmin = this.padding;
     this.xmax = this.width - this.padding;
