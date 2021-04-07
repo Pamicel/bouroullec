@@ -403,12 +403,10 @@ void mouseReleased() {
       current = ribonsHere.get(i);
       if (current.frontButtons.isHoverLeftBank(mouseX, mouseY) || current.backButtons.isHoverLeftBank(mouseX, mouseY)) {
         newRibon = current.createLeftRibon(linearDensity);
-        println(newRibon);
         addNewRibon(newRibon);
       }
       if (current.frontButtons.isHoverRightBank(mouseX, mouseY) || current.backButtons.isHoverRightBank(mouseX, mouseY)) {
         newRibon = current.createRightRibon(linearDensity);
-        println(newRibon);
         addNewRibon(newRibon);
       };
     }
