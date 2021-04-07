@@ -11,7 +11,7 @@ void setup() {
   this.surface.setLocation(200, 200);
 }
 
-void draw() {}
+void draw() {noLoop();}
 
 class DisplayWindow extends PApplet {
   DisplayWindow() {
@@ -149,16 +149,17 @@ class DisplayWindow extends PApplet {
 
     if (!drewCurve || emptyResample) {
       ArrayList<Ribon> ribonsHere = ribonEndPositions.getRibonsAt(mouseX, mouseY);
+      Vec2D[] variationCurve = toolWindow.getYNormalizedCurve();
       Ribon current;
       int nRibonsHere = ribonsHere != null ? ribonsHere.size() : 0;
       for (int i = 0; i < nRibonsHere; i++) {
         current = ribonsHere.get(i);
         if (current.frontButtons.isHoverLeftBank(mouseX, mouseY) || current.backButtons.isHoverLeftBank(mouseX, mouseY)) {
-          newRibon = current.createLeftRibon(linearDensity);
+          newRibon = current.createLeftRibon(linearDensity, variationCurve);
           addNewRibon(newRibon);
         }
         if (current.frontButtons.isHoverRightBank(mouseX, mouseY) || current.backButtons.isHoverRightBank(mouseX, mouseY)) {
-          newRibon = current.createRightRibon(linearDensity);
+          newRibon = current.createRightRibon(linearDensity, variationCurve);
           addNewRibon(newRibon);
         };
       }

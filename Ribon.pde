@@ -168,6 +168,41 @@ class Ribon {
     return newRibon;
   }
 
+  Ribon createRightRibon(float linearDensity, Vec2D[] variationCurve) {
+    Ribon newRibon = this.createRightRibon(linearDensity);
+    if (variationCurve != null) {
+      newRibon.applyVariationCurve(variationCurve);
+    }
+    return newRibon;
+  }
+
+  Ribon createLeftRibon(float linearDensity, Vec2D[] variationCurve) {
+    Ribon newRibon = this.createLeftRibon(linearDensity);
+    if (variationCurve != null) {
+      newRibon.applyVariationCurve(variationCurve);
+    }
+    return newRibon;
+  }
+
+  void applyVariationCurve(Vec2D[] variationCurve) {
+    int totalSize = 0;
+    for (int i = 0; i < this.curves.size(); i++) {
+      totalSize += this.curves.get(i).length;
+    }
+
+    Vec2D[] resampledVariationCurve = regularResample(variationCurve, totalSize);
+
+    int vcIndex = 0;
+    Vec2D[] currentCurve, currentNormals;
+    for (int i = 0; i < this.curves.size(); i++) {
+      currentCurve = this.curves.get(i);
+      currentNormals = this.normals.get(i);
+      for (int j = 0; j < currentCurve.length; j++) {
+        currentCurve[j] = currentCurve[j].add(currentNormals[j].getNormalizedTo(this.ribonWid * resampledVariationCurve[vcIndex++].y));
+      }
+    }
+  }
+
   private Vec2D[] computeCurveNormals(Vec2D[] curve) {
     Vec2D[] curveNormals = new Vec2D[curve.length];
     curveNormals[0] = curve[0].sub(curve[1]).getRotated(HALF_PI).getNormalized();

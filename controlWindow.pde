@@ -6,10 +6,11 @@ class ToolWindow extends PApplet {
   }
 
   ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
-  Vec2D[] finalCurve;
+  Vec2D[] finalCurve = null;
   PGraphics finalCurveLayer;
   float linearDensity = 1.0 / 5;
   int xmin, xmax, padding;
+  int ymin, ymax, ymid, ygap;
 
   private int curveDirection(ArrayList<Vec2D> curve) {
     Vec2D curveFirstPoint = curve.get(0);
@@ -121,6 +122,18 @@ class ToolWindow extends PApplet {
     layer.endDraw();
   }
 
+  Vec2D[] getYNormalizedCurve() {
+    if (this.finalCurve == null) {
+      return null;
+    }
+    Vec2D[] yNormalizedCurve = new Vec2D[this.finalCurve.length];
+    for(int i = 0; i < this.finalCurve.length; i++) {
+      yNormalizedCurve[i] = new Vec2D(0, (- this.finalCurve[i].y + this.ymin) / (this.ygap / 2));
+    }
+
+    return yNormalizedCurve;
+  }
+
   //
 
   void settings() {
@@ -132,6 +145,9 @@ class ToolWindow extends PApplet {
     this.padding = 20;
     this.xmin = this.padding;
     this.xmax = this.width - this.padding;
+    this.ymax = 3 * this.height / 4;
+    this.ymin = this.height / 4;
+    this.ygap = this.ymax - this.ymin;
     this.finalCurveLayer = this.createGraphics(this.width, this.height);
   }
 
