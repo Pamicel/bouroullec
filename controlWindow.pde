@@ -158,6 +158,8 @@ class ToolWindow extends PApplet {
     this.line(this.padding, 0, this.padding, this.height);
     this.line(this.width - this.padding, 0, this.width - this.padding, this.height);
     this.line(this.padding, this.height / 2, this.width - this.padding, this.height / 2);
+    this.line(this.padding, this.ymin, this.width - this.padding, this.ymin);
+    this.line(this.padding, this.ymax, this.width - this.padding, this.ymax);
     if (mousePressed) {
       this.stroke(0);
       this.beginShape();

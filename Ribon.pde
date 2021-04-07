@@ -72,7 +72,7 @@ class Ribon {
       translation = referencePoint.sub(curve[0]);
     }
 
-    // Reverse and translate
+    // translate
     Vec2D[] processedCurve = new Vec2D[curve.length];
     for (int i = 0; i < curve.length; i++) {
       processedCurve[i] = curve[curve.length - i - 1].add(translation);
@@ -171,6 +171,10 @@ class Ribon {
   Ribon createRightRibon(float linearDensity, Vec2D[] variationCurve) {
     Ribon newRibon = this.createRightRibon(linearDensity);
     if (variationCurve != null) {
+      // invert the variationCurve
+      for (int i = 0; i < variationCurve.length; i++) {
+        variationCurve[i] = variationCurve[i].getInverted();
+      }
       newRibon.applyVariationCurve(variationCurve);
     }
     return newRibon;
