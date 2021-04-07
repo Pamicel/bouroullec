@@ -4,6 +4,8 @@ import java.util.*;
 ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
 Vec2D[] resampledCurve = null;
 
+PApplet toolWindow;
+
 RibonEndPositions ribonEndPositions;
 
 class RibonEndButtons {
@@ -280,6 +282,7 @@ ArrayList<Ribon> ribons = new ArrayList<Ribon>();
 
 void setup() {
   size(800, 800);
+  toolWindow = new ChildApplet();
   noFill();
   ribonsLayer = createGraphics(width, height);
   buttonsLayer = createGraphics(width, height);
