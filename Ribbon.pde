@@ -201,6 +201,7 @@ class Ribbon {
   }
 
   private void computeCurveNormals() {
+    if (this.curve.length <= 1) { return; }
     Vec2D[] curve = this.curve;
     this.normals = new Vec2D[curve.length];
     this.normals[0] = curve[0].sub(curve[1]).getRotated(HALF_PI).getNormalized();
