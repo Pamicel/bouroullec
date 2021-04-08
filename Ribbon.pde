@@ -45,17 +45,30 @@ class RibbonEndButtons {
 }
 
 class Ribbon {
-  ArrayList<Vec2D[]> curves = new ArrayList<Vec2D[]>();
-  ArrayList<Vec2D[]> normals = new ArrayList<Vec2D[]>();
+  Vec2D[] curve = new Vec2D[0];
+  Vec2D[] normals = new Vec2D[0];
+
   RibbonEndButtons frontButtons = null,
                   backButtons = null;
+
   Ribbon leftRibbon = null,
         rightRibbon = null;
 
   float ribbonWid = 5.0;
 
   Ribbon(Vec2D[] curve) {
-    this.addToBack(curve);
+    this.curve = curve;
+    this.computeCurveNormals();
+    this.computeEndButtons();
+  }
+
+  Ribbon(Vec2D[] curve, Vec2D[] variations) {
+    this.curve = curve;
+    this.computeCurveNormals();
+    if (variations != null && variations.length > 0) {
+      this.applyVariationsToCurve(variations);
+      this.computeCurveNormals();
+    }
     this.computeEndButtons();
   }
 
@@ -91,231 +104,121 @@ class Ribbon {
     this.backButtons.deleteRightBank();
   }
 
-  void addToBack(Vec2D[] curve) {
-    if (curve.length <= 1) {
-      return;
-    }
-
-    Vec2D[] processedCurve;
-
-    int curvesLen = this.curves.size();
-    if (curvesLen != 0) {
-      Vec2D[] endCurve = this.curves.get(curvesLen - 1);
-      Vec2D referencePoint = endCurve[endCurve.length - 1];
-      Vec2D translation = referencePoint.sub(curve[0]);
-      // translate
-      processedCurve = new Vec2D[curve.length];
-      for (int i = 0; i < curve.length; i++) {
-        processedCurve[i] = curve[i].add(translation);
-      }
-    } else {
-      processedCurve = curve;
-    }
-
-    this.normals.add(this.computeCurveNormals(processedCurve));
-    this.curves.add(processedCurve);
-  }
-
-  void addToFront(Vec2D[] curve) {
-    if (curve.length <= 1) {
-      return;
-    }
-
-    Vec2D translation = new Vec2D(0, 0);
-
-    if (this.curves.size() != 0) {
-      Vec2D[] frontCurve = this.curves.get(0);
-      Vec2D referencePoint = frontCurve[0];
-      translation = referencePoint.sub(curve[0]);
-    }
-
-    // translate
-    Vec2D[] processedCurve = new Vec2D[curve.length];
-    for (int i = 0; i < curve.length; i++) {
-      processedCurve[i] = curve[curve.length - i - 1].add(translation);
-    }
-
-
-    this.normals.add(0, this.computeCurveNormals(processedCurve));
-    this.curves.add(0, processedCurve);
-  }
-
   void displayCurve(PGraphics layer) {
-    int curveLen = this.curves.size();
-    if (curveLen == 0) {
-      return;
-    }
-
     layer.stroke(0);
     layer.noFill();
     layer.beginShape();
     Vec2D pos;
-    Vec2D[] currentCurve;
-    for (int curveIndex = 0; curveIndex < curveLen; curveIndex++) {
-      currentCurve = this.curves.get(curveIndex);
-      for (int i = 0; i < currentCurve.length; i++) {
-        pos = currentCurve[i];
-        layer.circle(pos.x, pos.y, this.ribbonWid / 10);
-        layer.vertex(pos.x, pos.y);
-      }
+    for (int i = 0; i < this.curve.length; i++) {
+      pos = this.curve[i];
+      layer.circle(pos.x, pos.y, this.ribbonWid / 10);
+      layer.vertex(pos.x, pos.y);
     }
     layer.endShape();
   }
 
   void displayCurveSmooth(PGraphics layer) {
-    int curveLen = this.curves.size();
-    if (curveLen == 0) {
-      return;
-    }
-
     layer.stroke(0);
     layer.noFill();
     layer.beginShape();
     Vec2D pos;
-    Vec2D[] currentCurve;
-    for (int curveIndex = 0; curveIndex < curveLen; curveIndex++) {
-      currentCurve = this.curves.get(curveIndex);
-      for (int i = 0; i < currentCurve.length; i++) {
-        pos = currentCurve[i];
+    for (int i = 0; i < this.curve.length; i++) {
+      pos = this.curve[i];
+      layer.curveVertex(pos.x, pos.y);
+      // double first and last
+      if (i == 0 || i == this.curve.length - 1) {
         layer.curveVertex(pos.x, pos.y);
-        // double first and last
-        if (i == 0 || i == currentCurve.length - 1) {
-          layer.curveVertex(pos.x, pos.y);
-        }
       }
     }
     layer.endShape();
   }
 
   void displayNormals(PGraphics layer, int len) {
-    int normalsLen = this.normals.size();
     Vec2D start, end;
-    Vec2D[] currentNormals, currentCurve;
 
-    for (int index = 0; index < normalsLen; index++) {
-      currentNormals = this.normals.get(index);
-      currentCurve = this.curves.get(index);
-      for (int i = 0; i < currentNormals.length; i++) {
-        start = currentCurve[i];
-        end = start.add(currentNormals[i].getNormalizedTo(len));
-        layer.line(start.x, start.y, end.x, end.y);
-        layer.push();
-        layer.fill(255, 0, 0);
-        layer.noStroke();
-        layer.circle(end.x, end.y, 3);
-        layer.pop();
-      }
+    for (int i = 0; i < this.normals.length; i++) {
+      start = this.curve[i];
+      end = start.add(this.normals[i].getNormalizedTo(len));
+      layer.line(start.x, start.y, end.x, end.y);
+      layer.push();
+      layer.fill(255, 0, 0);
+      layer.noStroke();
+      layer.circle(end.x, end.y, 3);
+      layer.pop();
     }
-  }
-
-  Ribbon createLeftRibbon(float linearDensity) {
-    Ribbon newRibbon = null;
-    for (int i = 0; i < this.curves.size(); i++) {
-      Vec2D[] currentCurve = this.curves.get(i);
-      Vec2D[] currentNormals = this.normals.get(i);
-      Vec2D[] newCurve = new Vec2D[currentCurve.length];
-      for (int index = 0; index < newCurve.length; index++) {
-        newCurve[index] = currentCurve[index].copy().add(currentNormals[index].getNormalizedTo(this.ribbonWid));
-      }
-      newCurve = densityResample(newCurve, linearDensity);
-
-      if (newRibbon == null) {
-        newRibbon = new Ribbon(newCurve);
-      } else {
-        newRibbon.addToBack(newCurve);
-      }
-    }
-
-    return newRibbon;
-  }
-
-  Ribbon createRightRibbon(float linearDensity) {
-    Ribbon newRibbon = null;
-    for (int i = 0; i < this.curves.size(); i++) {
-      Vec2D[] currentCurve = this.curves.get(i);
-      Vec2D[] currentNormals = this.normals.get(i);
-      Vec2D[] newCurve = new Vec2D[currentCurve.length];
-      for (int index = 0; index < newCurve.length; index++) {
-        newCurve[index] = currentCurve[index].copy().sub(currentNormals[index].getNormalizedTo(this.ribbonWid));
-      }
-      newCurve = densityResample(newCurve, linearDensity);
-
-      if (newRibbon == null) {
-        newRibbon = new Ribbon(newCurve);
-      } else {
-        newRibbon.addToBack(newCurve);
-      }
-    }
-
-    return newRibbon;
-  }
-
-  Ribbon createRightRibbon(float linearDensity, Vec2D[] variationCurve) {
-    Ribbon newRibbon = this.createRightRibbon(linearDensity);
-    if (variationCurve != null) {
-      // invert the variationCurve
-      for (int i = 0; i < variationCurve.length; i++) {
-        variationCurve[i] = variationCurve[i].getInverted();
-      }
-      newRibbon.applyVariationCurve(variationCurve);
-    }
-    return newRibbon;
   }
 
   Ribbon createLeftRibbon(float linearDensity, Vec2D[] variationCurve) {
-    Ribbon newRibbon = this.createLeftRibbon(linearDensity);
-    if (variationCurve != null) {
-      newRibbon.applyVariationCurve(variationCurve);
+    Vec2D[] newCurve = new Vec2D[this.curve.length];
+    for (int index = 0; index < newCurve.length; index++) {
+      newCurve[index] = this.curve[index].copy().add(this.normals[index].getNormalizedTo(this.ribbonWid));
     }
-    return newRibbon;
+
+    return new Ribbon(densityResample(newCurve, linearDensity), variationCurve);
   }
 
-  void applyVariationCurve(Vec2D[] variationCurve) {
-    int totalSize = 0;
-    for (int i = 0; i < this.curves.size(); i++) {
-      totalSize += this.curves.get(i).length;
-    }
+  Ribbon createRightRibbon(float linearDensity, Vec2D[] variationCurve) {
+    Vec2D[] invertedVariationCurve = null;
+    Vec2D[] newCurve = new Vec2D[this.curve.length];
 
-    Vec2D[] resampledVariationCurve = regularResample(variationCurve, totalSize);
-
-    int vcIndex = 0;
-    Vec2D[] currentCurve, currentNormals;
-    for (int i = 0; i < this.curves.size(); i++) {
-      currentCurve = this.curves.get(i);
-      currentNormals = this.normals.get(i);
-      for (int j = 0; j < currentCurve.length; j++) {
-        currentCurve[j] = currentCurve[j].add(currentNormals[j].getNormalizedTo(this.ribbonWid * resampledVariationCurve[vcIndex++].y));
+    // invert the variationCurve
+    if (variationCurve != null) {
+      invertedVariationCurve = new Vec2D[variationCurve.length];
+      for (int i = 0; i < variationCurve.length; i++) {
+        invertedVariationCurve[i] = variationCurve[i].getInverted();
       }
     }
 
-    this.computeEndButtons();
+    for (int index = 0; index < newCurve.length; index++) {
+      newCurve[index] = this.curve[index].copy().sub(this.normals[index].getNormalizedTo(this.ribbonWid));
+    }
+    newCurve = densityResample(newCurve, linearDensity);
+
+    return new Ribbon(newCurve, invertedVariationCurve);
   }
 
-  private Vec2D[] computeCurveNormals(Vec2D[] curve) {
-    Vec2D[] curveNormals = new Vec2D[curve.length];
-    curveNormals[0] = curve[0].sub(curve[1]).getRotated(HALF_PI).getNormalized();
-    curveNormals[curve.length - 1] = curve[curve.length - 2].sub(curve[curve.length - 1]).getRotated(HALF_PI).getNormalized();
-    for (int i = 1; i < curve.length - 1; i++) {
-      curveNormals[i] = curve[i - 1].sub(curve[i + 1]).getRotated(HALF_PI).getNormalized();
-    }
+  Ribbon createRightRibbon(float linearDensity) {
+    return this.createRightRibbon(linearDensity, null);
+  }
 
-    return curveNormals;
+  Ribbon createLeftRibbon(float linearDensity) {
+    return this.createLeftRibbon(linearDensity, null);
+  }
+
+  void applyVariationsToCurve(Vec2D[] variations) {
+    Vec2D[] resampledVariations = regularResample(variations, this.curve.length);
+
+    for (int j = 0; j < this.curve.length; j++) {
+      this.curve[j] = this.curve[j].add(this.normals[j].getNormalizedTo(this.ribbonWid * resampledVariations[j].y));
+    }
+  }
+
+  private void computeCurveNormals() {
+    Vec2D[] curve = this.curve;
+    this.normals = new Vec2D[curve.length];
+    this.normals[0] = curve[0].sub(curve[1]).getRotated(HALF_PI).getNormalized();
+    this.normals[curve.length - 1] = curve[curve.length - 2].sub(curve[curve.length - 1]).getRotated(HALF_PI).getNormalized();
+    for (int i = 1; i < curve.length - 1; i++) {
+      this.normals[i] = curve[i - 1].sub(curve[i + 1]).getRotated(HALF_PI).getNormalized();
+    }
   }
 
   void computeEndButtons() {
-    int len = this.curves.size();
-    Vec2D[] firstCurve = this.curves.get(0);
-    Vec2D[] lastCurve = this.curves.get(len - 1);
+    int len = this.curve.length;
+    Vec2D firstPoint = this.curve[0];
+    Vec2D secondPoint = this.curve[1];
+    Vec2D beforeLastPoint = this.curve[len - 2];
+    Vec2D lastPoint = this.curve[len - 1];
 
     this.frontButtons = new RibbonEndButtons();
     this.backButtons = new RibbonEndButtons();
 
-    this.frontButtons.center = firstCurve[0];
-    this.frontButtons.leftBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(-HALF_PI).getNormalizedTo(this.ribbonWid / 2));
-    this.frontButtons.rightBank = firstCurve[0].add(firstCurve[1].sub(firstCurve[0]).getRotated(HALF_PI).getNormalizedTo(this.ribbonWid / 2));
-    this.backButtons.rightBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(-HALF_PI).getNormalizedTo(this.ribbonWid / 2));
-    this.backButtons.leftBank = lastCurve[lastCurve.length - 1].add(lastCurve[lastCurve.length - 2].sub(lastCurve[lastCurve.length - 1]).getRotated(HALF_PI).getNormalizedTo(this.ribbonWid / 2));
-    this.backButtons.center = lastCurve[lastCurve.length - 1];
+    this.frontButtons.center = firstPoint;
+    this.frontButtons.leftBank = firstPoint.add(secondPoint.sub(firstPoint).getRotated(-HALF_PI).getNormalizedTo(this.ribbonWid / 2));
+    this.frontButtons.rightBank = firstPoint.add(secondPoint.sub(firstPoint).getRotated(HALF_PI).getNormalizedTo(this.ribbonWid / 2));
+    this.backButtons.rightBank = lastPoint.add(beforeLastPoint.sub(lastPoint).getRotated(-HALF_PI).getNormalizedTo(this.ribbonWid / 2));
+    this.backButtons.leftBank = lastPoint.add(beforeLastPoint.sub(lastPoint).getRotated(HALF_PI).getNormalizedTo(this.ribbonWid / 2));
+    this.backButtons.center = lastPoint;
   }
 
   void displayEndButtons(PGraphics layer) {
