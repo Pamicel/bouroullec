@@ -266,6 +266,7 @@ class RibbonEndPositions {
   ArrayList<Ribbon> getRibbonsAt(int mX, int mY) {
     int index = this.positionIndex(new Vec2D(mX, mY));
     if (index < 0) return null;
+    if (index >= this.ribbons.length) return null;
     if (this.ribbons[index] != null) {
       return this.ribbons[index];
     }
