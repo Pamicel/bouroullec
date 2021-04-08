@@ -131,8 +131,7 @@ class DisplayWindow extends PApplet {
 
   void addNewRibbon(Ribbon newRibbon) {
     ribbons.add(newRibbon);
-    ribbonEndPositions = new RibbonEndPositions(width, height);
-    ribbonEndPositions.addRibbons(ribbons);
+    ribbonEndPositions.addRibbon(newRibbon);
   }
 
   boolean isOverButton() {
