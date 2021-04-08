@@ -23,7 +23,7 @@ class DisplayWindow extends PApplet {
   Vec2D[] resampledCurve = null;
   RibbonEndPositions ribbonEndPositions;
   PGraphics ribbonsLayer, buttonsLayer, interactiveLayer;
-  float LINEAR_DENSITY = 1.0 / 10; // 1 point every 10 pixels
+  final float LINEAR_DENSITY = 1.0 / 2; // 1 point every N pixels
   ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>();
 
   void settings () {
@@ -111,9 +111,14 @@ class DisplayWindow extends PApplet {
       currentRibbon = ribbons.get(i);
       ribbonsLayer.beginDraw();
       currentRibbon.displayCurve(ribbonsLayer);
-      currentRibbon.displayNormals(ribbonsLayer, 10);
       ribbonsLayer.endDraw();
     }
+  }
+
+  void printNewRibbon(Ribbon ribbon) {
+    ribbonsLayer.beginDraw();
+    ribbon.displayCurve(ribbonsLayer);
+    ribbonsLayer.endDraw();
   }
 
   void printRibbonButtons() {
@@ -136,7 +141,7 @@ class DisplayWindow extends PApplet {
   }
 
   void mouseReleased() {
-    float linearDensity = 1.0 / 20;
+    float linearDensity = this.LINEAR_DENSITY;
     Ribbon newRibbon;
 
     boolean drewCurve = curve.size() > 1;
@@ -158,12 +163,14 @@ class DisplayWindow extends PApplet {
           current.assignLeftRibbon(newRibbon);
           newRibbon.assignRightRibbon(current);
           addNewRibbon(newRibbon);
+          printNewRibbon(newRibbon);
         }
         if (current.frontButtons.isHoverRightBank(mouseX, mouseY) || current.backButtons.isHoverRightBank(mouseX, mouseY)) {
           newRibbon = current.createRightRibbon(linearDensity, variationCurve);
           current.assignRightRibbon(newRibbon);
           newRibbon.assignLeftRibbon(current);
           addNewRibbon(newRibbon);
+          printNewRibbon(newRibbon);
         };
       }
     }
@@ -171,6 +178,7 @@ class DisplayWindow extends PApplet {
     else if (!emptyResample) {
       newRibbon = new Ribbon(resampledCurve);
       addNewRibbon(newRibbon);
+      printNewRibbon(newRibbon);
 
       // Ribbon leftRibbon = newRibbon.createLeftRibbon(linearDensity);
       // leftRibbon.computeEndButtons();
@@ -180,7 +188,6 @@ class DisplayWindow extends PApplet {
       // ribbonEndPositions.addRibbons(ribbons);
     }
 
-    printRibbons();
     printRibbonButtons();
   }
 
