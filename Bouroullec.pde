@@ -26,6 +26,8 @@ class DisplayWindow extends PApplet {
   final float LINEAR_DENSITY = 1.0 / 10; // 1 point every N pixels
   ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>();
 
+  // Processing methods
+
   void settings () {
     size(800, 800);
     smooth();
@@ -47,8 +49,6 @@ class DisplayWindow extends PApplet {
     return angle;
   }
 
-  Vec2D pos = new Vec2D(0, 0);
-
   void draw() {
     background(255);
 
@@ -67,6 +67,8 @@ class DisplayWindow extends PApplet {
     image(ribbonsLayer, 0, 0);
     image(buttonsLayer, 0, 0);
   }
+
+  // Sketch methods
 
   Vec2D[] remapCurve(Vec2D[] curve, Vec2D targetPointA, Vec2D targetPointB) {
     Vec2D curvePointA = curve[0];
@@ -92,15 +94,6 @@ class DisplayWindow extends PApplet {
     }
 
     return remaped;
-  }
-
-  void mouseDragged() {
-    curve.add(new Vec2D(mouseX, mouseY));
-  }
-
-  void mousePressed() {
-    curve = new ArrayList<Vec2D>();
-    curve.add(new Vec2D(mouseX, mouseY));
   }
 
   void printRibbons() {
@@ -139,6 +132,17 @@ class DisplayWindow extends PApplet {
     ribbons.add(newRibbon);
     ribbonEndPositions = new RibbonEndPositions(width, height);
     ribbonEndPositions.addRibbons(ribbons);
+  }
+
+  // Event methods
+
+  void mouseDragged() {
+    curve.add(new Vec2D(mouseX, mouseY));
+  }
+
+  void mousePressed() {
+    curve = new ArrayList<Vec2D>();
+    curve.add(new Vec2D(mouseX, mouseY));
   }
 
   void mouseReleased() {
