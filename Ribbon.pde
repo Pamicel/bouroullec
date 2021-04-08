@@ -54,7 +54,7 @@ class Ribbon {
   Ribbon leftRibbon = null,
         rightRibbon = null;
 
-  float ribbonWid = 5.0;
+  float ribbonWid = 10.0;
 
   Ribbon(Vec2D[] curve) {
     this.curve = curve;
@@ -126,6 +126,7 @@ class Ribbon {
 
   void displayCurveSmooth(PGraphics layer) {
     layer.stroke(0);
+    layer.strokeWeight(round(random(1, this.ribbonWid)));
     layer.noFill();
     layer.beginShape();
     Vec2D pos;
@@ -161,7 +162,9 @@ class Ribbon {
       newCurve[index] = this.curve[index].copy().add(this.normals[index].getNormalizedTo(this.ribbonWid));
     }
 
-    return new Ribbon(densityResample(newCurve, linearDensity), variationCurve);
+    newCurve = densityResample(newCurve, linearDensity);
+    if (newCurve.length < 2) { return null; }
+    return new Ribbon(newCurve, variationCurve);
   }
 
   Ribbon createRightRibbon(float linearDensity, Vec2D[] variationCurve) {
@@ -181,6 +184,7 @@ class Ribbon {
     }
     newCurve = densityResample(newCurve, linearDensity);
 
+    if (newCurve.length < 2) { return null; }
     return new Ribbon(newCurve, invertedVariationCurve);
   }
 
@@ -212,6 +216,7 @@ class Ribbon {
   }
 
   void computeEndButtons() {
+    if (this.curve.length <= 1) { return; }
     int len = this.curve.length;
     Vec2D firstPoint = this.curve[0];
     Vec2D secondPoint = this.curve[1];

@@ -25,7 +25,7 @@ class DisplayWindow extends PApplet {
   Vec2D[] resampledCurve = null;
   RibbonEndPositions ribbonEndPositions;
   PGraphics ribbonsLayer, buttonsLayer, interactiveLayer;
-  final float LINEAR_DENSITY = 1.0 / 10; // 1 point every N pixels
+  final float LINEAR_DENSITY = 1.0 / 30; // 1 point every N pixels
   ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>();
 
   // Processing methods
@@ -158,23 +158,27 @@ class DisplayWindow extends PApplet {
       current = ribbonsHere.get(i);
       if (current.frontButtons.isHoverLeftBank(mouseX, mouseY) || current.backButtons.isHoverLeftBank(mouseX, mouseY)) {
         newRibbon = current.createLeftRibbon(this.LINEAR_DENSITY, variationCurve);
-        current.assignLeftRibbon(newRibbon);
-        newRibbon.assignRightRibbon(current);
-        if (!current.hasRightBank()) {
-          ribbonEndPositions.removeRibbon(current);
+        if (newRibbon != null) {
+          current.assignLeftRibbon(newRibbon);
+          newRibbon.assignRightRibbon(current);
+          if (!current.hasRightBank()) {
+            ribbonEndPositions.removeRibbon(current);
+          }
+          addNewRibbon(newRibbon);
+          printNewRibbon(newRibbon);
         }
-        addNewRibbon(newRibbon);
-        printNewRibbon(newRibbon);
       }
       if (current.frontButtons.isHoverRightBank(mouseX, mouseY) || current.backButtons.isHoverRightBank(mouseX, mouseY)) {
         newRibbon = current.createRightRibbon(this.LINEAR_DENSITY, variationCurve);
-        current.assignRightRibbon(newRibbon);
-        newRibbon.assignLeftRibbon(current);
-        if (!current.hasLeftBank()) {
-          ribbonEndPositions.removeRibbon(current);
+        if (newRibbon != null) {
+          current.assignRightRibbon(newRibbon);
+          newRibbon.assignLeftRibbon(current);
+          if (!current.hasLeftBank()) {
+            ribbonEndPositions.removeRibbon(current);
+          }
+          addNewRibbon(newRibbon);
+          printNewRibbon(newRibbon);
         }
-        addNewRibbon(newRibbon);
-        printNewRibbon(newRibbon);
       };
     }
   }
