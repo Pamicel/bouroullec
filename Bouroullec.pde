@@ -36,6 +36,7 @@ class DisplayWindow extends PApplet {
   void setup() {
     noFill();
     this.surface.setLocation(100, 100);
+    ribbonEndPositions = new RibbonEndPositions(width, height);
     ribbonsLayer = createGraphics(width, height);
     buttonsLayer = createGraphics(width, height);
   }
@@ -53,7 +54,7 @@ class DisplayWindow extends PApplet {
     background(255);
 
     Vec2D pos;
-    if (mousePressed) {
+    if (mousePressed && !extending) {
       stroke(0);
       beginShape();
       for (int i = 0; i < curve.size(); i++) {
@@ -134,63 +135,81 @@ class DisplayWindow extends PApplet {
     ribbonEndPositions.addRibbons(ribbons);
   }
 
+  boolean isOverButton() {
+    ArrayList<Ribbon> ribbonsHere = ribbonEndPositions.getRibbonsAt(mouseX, mouseY);
+    int nRibbonsHere = ribbonsHere != null ? ribbonsHere.size() : 0;
+    Ribbon current;
+    for (int i = 0; i < nRibbonsHere; i++) {
+      current = ribbonsHere.get(i);
+      if (current.isOverButton(mouseX, mouseY)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  void extend() {
+    ArrayList<Ribbon> ribbonsHere = ribbonEndPositions.getRibbonsAt(mouseX, mouseY);
+    Vec2D[] variationCurve = toolWindow.getYNormalizedCurve();
+    Ribbon current, newRibbon;
+    int nRibbonsHere = ribbonsHere != null ? ribbonsHere.size() : 0;
+    for (int i = 0; i < nRibbonsHere; i++) {
+      current = ribbonsHere.get(i);
+      if (current.frontButtons.isHoverLeftBank(mouseX, mouseY) || current.backButtons.isHoverLeftBank(mouseX, mouseY)) {
+        newRibbon = current.createLeftRibbon(this.LINEAR_DENSITY, variationCurve);
+        current.assignLeftRibbon(newRibbon);
+        newRibbon.assignRightRibbon(current);
+        addNewRibbon(newRibbon);
+        printNewRibbon(newRibbon);
+      }
+      if (current.frontButtons.isHoverRightBank(mouseX, mouseY) || current.backButtons.isHoverRightBank(mouseX, mouseY)) {
+        newRibbon = current.createRightRibbon(this.LINEAR_DENSITY, variationCurve);
+        current.assignRightRibbon(newRibbon);
+        newRibbon.assignLeftRibbon(current);
+        addNewRibbon(newRibbon);
+        printNewRibbon(newRibbon);
+      };
+    }
+  }
+
   // Event methods
 
+  boolean extending = false;
+
   void mouseDragged() {
-    curve.add(new Vec2D(mouseX, mouseY));
+    if (extending) {
+      this.extend();
+      this.printRibbonButtons();
+    } else {
+      curve.add(new Vec2D(mouseX, mouseY));
+    }
   }
 
   void mousePressed() {
     curve = new ArrayList<Vec2D>();
+    extending = this.isOverButton();
     curve.add(new Vec2D(mouseX, mouseY));
   }
 
   void mouseReleased() {
-    float linearDensity = this.LINEAR_DENSITY;
+    extending = false;
+
     Ribbon newRibbon;
 
     boolean drewCurve = curve.size() > 1;
     boolean emptyResample = false;
     if (drewCurve) {
-      resampledCurve = densityResample(curve, linearDensity);
+      resampledCurve = densityResample(curve, this.LINEAR_DENSITY);
       emptyResample = resampledCurve.length <= 1;
     }
 
     if (!drewCurve || emptyResample) {
-      ArrayList<Ribbon> ribbonsHere = ribbonEndPositions.getRibbonsAt(mouseX, mouseY);
-      Vec2D[] variationCurve = toolWindow.getYNormalizedCurve();
-      Ribbon current;
-      int nRibbonsHere = ribbonsHere != null ? ribbonsHere.size() : 0;
-      for (int i = 0; i < nRibbonsHere; i++) {
-        current = ribbonsHere.get(i);
-        if (current.frontButtons.isHoverLeftBank(mouseX, mouseY) || current.backButtons.isHoverLeftBank(mouseX, mouseY)) {
-          newRibbon = current.createLeftRibbon(linearDensity, variationCurve);
-          current.assignLeftRibbon(newRibbon);
-          newRibbon.assignRightRibbon(current);
-          addNewRibbon(newRibbon);
-          printNewRibbon(newRibbon);
-        }
-        if (current.frontButtons.isHoverRightBank(mouseX, mouseY) || current.backButtons.isHoverRightBank(mouseX, mouseY)) {
-          newRibbon = current.createRightRibbon(linearDensity, variationCurve);
-          current.assignRightRibbon(newRibbon);
-          newRibbon.assignLeftRibbon(current);
-          addNewRibbon(newRibbon);
-          printNewRibbon(newRibbon);
-        };
-      }
-    }
-
-    else if (!emptyResample) {
+      this.extend();
+    } else if (!emptyResample) {
       newRibbon = new Ribbon(resampledCurve);
       addNewRibbon(newRibbon);
       printNewRibbon(newRibbon);
-
-      // Ribbon leftRibbon = newRibbon.createLeftRibbon(linearDensity);
-      // leftRibbon.computeEndButtons();
-      // ribbons.add(leftRibbon);
-
-      // ribbonEndPositions = new RibbonEndPositions(width, height);
-      // ribbonEndPositions.addRibbons(ribbons);
     }
 
     printRibbonButtons();

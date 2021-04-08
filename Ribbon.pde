@@ -59,6 +59,26 @@ class Ribbon {
     this.computeEndButtons();
   }
 
+  boolean isOverButton(int mX, int mY) {
+    boolean isOverBack = (
+      this.backButtons != null &&
+      (
+        this.backButtons.isHoverLeftBank(mX, mY) ||
+        this.backButtons.isHoverRightBank(mX, mY) ||
+        this.backButtons.isHoverCenter(mX, mY)
+      )
+    );
+    boolean isOverFront = (
+      this.frontButtons != null &&
+      (
+        this.frontButtons.isHoverLeftBank(mX, mY) ||
+        this.frontButtons.isHoverRightBank(mX, mY) ||
+        this.frontButtons.isHoverCenter(mX, mY)
+      )
+    );
+    return isOverBack || isOverFront;
+  }
+
   void assignLeftRibbon(Ribbon leftRibbon) {
     this.leftRibbon = leftRibbon;
     this.frontButtons.deleteLeftBank();
@@ -307,7 +327,7 @@ class Ribbon {
 }
 
 class RibbonEndPositions {
-  int nw = 6, nh = 6;
+  int nw = 20, nh = 20;
   ArrayList<Ribbon>[] ribbons;
   int areaW, areaH;
 
