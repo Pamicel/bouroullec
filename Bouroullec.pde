@@ -8,6 +8,7 @@ DisplayWindow displayWindow;
 void setup() {
   toolWindow = new ToolWindow();
   displayWindow = new DisplayWindow();
+  displayWindow.savePath = this.sketchPath("");
   this.surface.setLocation(200, 200);
 }
 
@@ -19,6 +20,7 @@ class DisplayWindow extends PApplet {
     PApplet.runSketch(new String[]{this.getClass().getName()}, this);
   }
 
+  public String savePath = "";
   ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
   Vec2D[] resampledCurve = null;
   RibbonEndPositions ribbonEndPositions;
@@ -223,7 +225,7 @@ class DisplayWindow extends PApplet {
     if (key == ' ') {
       int date = (year() % 100) * 10000 + month() * 100 + day();
       int time = hour() * 10000 + minute() * 100 + second();
-      saveFrame("out/date-"+ date + "_time-"+ time);
+      ribbonsLayer.save(savePath + "out/date-"+ date + "_time-"+ time + ".png");
     }
   }
 }
