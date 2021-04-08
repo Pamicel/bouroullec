@@ -117,16 +117,15 @@ class DisplayWindow extends PApplet {
   }
 
   void printRibbonButtons() {
+    Ribbon[] allRibbons = ribbonEndPositions.getAllRibbons();
     Ribbon currentRibbon;
     buttonsLayer.beginDraw();
     buttonsLayer.clear();
-    buttonsLayer.endDraw();
-    for (int i = 0; i < ribbons.size(); i++) {
-      currentRibbon = ribbons.get(i);
-      buttonsLayer.beginDraw();
+    for (int i = 0; i < allRibbons.length; i++) {
+      currentRibbon = allRibbons[i];
       currentRibbon.displayEndButtons(buttonsLayer);
-      buttonsLayer.endDraw();
     }
+    buttonsLayer.endDraw();
   }
 
   void addNewRibbon(Ribbon newRibbon) {
@@ -159,6 +158,9 @@ class DisplayWindow extends PApplet {
         newRibbon = current.createLeftRibbon(this.LINEAR_DENSITY, variationCurve);
         current.assignLeftRibbon(newRibbon);
         newRibbon.assignRightRibbon(current);
+        if (!current.hasRightBank()) {
+          ribbonEndPositions.removeRibbon(current);
+        }
         addNewRibbon(newRibbon);
         printNewRibbon(newRibbon);
       }
@@ -166,6 +168,9 @@ class DisplayWindow extends PApplet {
         newRibbon = current.createRightRibbon(this.LINEAR_DENSITY, variationCurve);
         current.assignRightRibbon(newRibbon);
         newRibbon.assignLeftRibbon(current);
+        if (!current.hasLeftBank()) {
+          ribbonEndPositions.removeRibbon(current);
+        }
         addNewRibbon(newRibbon);
         printNewRibbon(newRibbon);
       };

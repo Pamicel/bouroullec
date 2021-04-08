@@ -92,6 +92,13 @@ class Ribbon {
     return isOverBack || isOverFront;
   }
 
+  boolean hasRightBank() {
+    return this.backButtons.rightBank != null && this.frontButtons.rightBank != null;
+  }
+  boolean hasLeftBank() {
+    return this.backButtons.leftBank != null && this.frontButtons.leftBank != null;
+  }
+
   void assignLeftRibbon(Ribbon leftRibbon) {
     this.leftRibbon = leftRibbon;
     this.frontButtons.deleteLeftBank();
@@ -232,6 +239,7 @@ class Ribbon {
 class RibbonEndPositions {
   int nw = 20, nh = 20;
   ArrayList<Ribbon>[] ribbons;
+  HashSet<Ribbon> allRibbons = new HashSet<Ribbon>();
   int areaW, areaH;
 
   RibbonEndPositions(int areaW, int areaH) {
@@ -261,6 +269,7 @@ class RibbonEndPositions {
       this.ribbons[index] = new ArrayList<Ribbon>();
     }
     this.ribbons[index].add(ribbon);
+    this.allRibbons.add(ribbon);
   }
 
   ArrayList<Ribbon> getRibbonsAt(int mX, int mY) {
@@ -271,6 +280,32 @@ class RibbonEndPositions {
       return this.ribbons[index];
     }
     return null;
+  }
+
+  Ribbon[] getAllRibbons() {
+    return this.allRibbons.toArray(new Ribbon[this.allRibbons.size()]);
+  }
+
+  void removeRibbon(Ribbon ribbon) {
+    HashSet<Integer> indices = new HashSet<Integer>();
+    indices.add(this.positionIndex(ribbon.frontButtons.center));
+    indices.add(this.positionIndex(ribbon.frontButtons.leftBank));
+    indices.add(this.positionIndex(ribbon.frontButtons.rightBank));
+    indices.add(this.positionIndex(ribbon.backButtons.center));
+    indices.add(this.positionIndex(ribbon.backButtons.leftBank));
+    indices.add(this.positionIndex(ribbon.backButtons.rightBank));
+    Iterator<Integer> it = indices.iterator();
+    while(it.hasNext()) {
+      this.removeRibbonAt(it.next(), ribbon);
+    }
+
+  }
+
+  private void removeRibbonAt(int index, Ribbon ribbon) {
+    if (index >= 0 && index < this.ribbons.length) {
+      this.ribbons[index].remove(Collections.singleton(ribbon));
+      this.allRibbons.remove(ribbon);
+    }
   }
 
   void addRibbon(Ribbon ribbon) {
