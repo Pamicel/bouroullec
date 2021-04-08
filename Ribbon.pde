@@ -52,7 +52,7 @@ class Ribbon {
   Ribbon leftRibbon = null,
         rightRibbon = null;
 
-  float ribbonWid = 20.0;
+  float ribbonWid = 5.0;
 
   Ribbon(Vec2D[] curve) {
     this.addToBack(curve);
@@ -72,6 +72,10 @@ class Ribbon {
   }
 
   void addToBack(Vec2D[] curve) {
+    if (curve.length <= 1) {
+      return;
+    }
+
     Vec2D[] processedCurve;
 
     int curvesLen = this.curves.size();
@@ -93,6 +97,10 @@ class Ribbon {
   }
 
   void addToFront(Vec2D[] curve) {
+    if (curve.length <= 1) {
+      return;
+    }
+
     Vec2D translation = new Vec2D(0, 0);
 
     if (this.curves.size() != 0) {
@@ -129,6 +137,31 @@ class Ribbon {
         pos = currentCurve[i];
         layer.circle(pos.x, pos.y, this.ribbonWid / 10);
         layer.vertex(pos.x, pos.y);
+      }
+    }
+    layer.endShape();
+  }
+
+  void displayCurveSmooth(PGraphics layer) {
+    int curveLen = this.curves.size();
+    if (curveLen == 0) {
+      return;
+    }
+
+    layer.stroke(0);
+    layer.noFill();
+    layer.beginShape();
+    Vec2D pos;
+    Vec2D[] currentCurve;
+    for (int curveIndex = 0; curveIndex < curveLen; curveIndex++) {
+      currentCurve = this.curves.get(curveIndex);
+      for (int i = 0; i < currentCurve.length; i++) {
+        pos = currentCurve[i];
+        layer.curveVertex(pos.x, pos.y);
+        // double first and last
+        if (i == 0 || i == currentCurve.length - 1) {
+          layer.curveVertex(pos.x, pos.y);
+        }
       }
     }
     layer.endShape();

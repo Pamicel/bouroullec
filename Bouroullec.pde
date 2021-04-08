@@ -23,11 +23,12 @@ class DisplayWindow extends PApplet {
   Vec2D[] resampledCurve = null;
   RibbonEndPositions ribbonEndPositions;
   PGraphics ribbonsLayer, buttonsLayer, interactiveLayer;
-  final float LINEAR_DENSITY = 1.0 / 2; // 1 point every N pixels
+  final float LINEAR_DENSITY = 1.0 / 10; // 1 point every N pixels
   ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>();
 
   void settings () {
     size(800, 800);
+    smooth();
   }
 
   void setup() {
@@ -117,7 +118,7 @@ class DisplayWindow extends PApplet {
 
   void printNewRibbon(Ribbon ribbon) {
     ribbonsLayer.beginDraw();
-    ribbon.displayCurve(ribbonsLayer);
+    ribbon.displayCurveSmooth(ribbonsLayer);
     ribbonsLayer.endDraw();
   }
 
