@@ -10,7 +10,7 @@ int[] DISPLAY_WIN_SIZE = new int[]{800, 800};
 int[] TOOL_WIN_SIZE = new int[]{200, 200};
 int[] DISPLAY_WIN_XY = SECONDARY_MONITOR ? new int[]{-400, -1200} : new int[]{100, 100};
 int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0] + 200, DISPLAY_WIN_XY[1] + 200};
-int RIBON_WID = 10;
+int RIBON_WID = 4;
 
 void setup() {
   // create the other windows
@@ -111,7 +111,7 @@ class DisplayWindow extends PApplet {
 
   void printNewRibbon(Ribbon ribbon) {
     ribbonsLayer.beginDraw();
-    ribbon.displayCurvePieces(ribbonsLayer);
+    ribbon.displayCurvePiecesSmoothBW(ribbonsLayer);
     ribbonsLayer.endDraw();
   }
 

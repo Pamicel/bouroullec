@@ -144,6 +144,86 @@ class Ribbon {
     }
   }
 
+  void displayCurvePiecesSmooth(PGraphics layer) {
+    if (curve.length < 2) return;
+    layer.strokeWeight(this.ribbonWid / 2);
+    layer.noFill();
+    layer.strokeCap(SQUARE);
+    layer.stroke(0);
+    Vec2D pos;
+    boolean drawingBefore = false;
+    boolean drawing = random(1) > .5;
+    int nDrawn = 0;
+    for (int i = 0; i < this.curve.length; i++) {
+      pos = this.curve[i];
+      if (drawing) {
+        if (!drawingBefore) {
+          layer.beginShape();
+          // double first
+          layer.curveVertex(pos.x, pos.y);
+        }
+        layer.curveVertex(pos.x, pos.y);
+      }
+
+      nDrawn += drawing ? 1 : 0;
+      drawingBefore = drawing;
+      boolean isLast = i == this.curve.length - 1;
+      drawing = (random(1) < .6 || (nDrawn < 2)) && !isLast;
+      nDrawn = drawing ? nDrawn : 0;
+
+      if (drawingBefore && !drawing) {
+        // double last
+        layer.curveVertex(pos.x, pos.y);
+        layer.endShape();
+      }
+    }
+  }
+
+  void displayCurvePiecesSmoothBW(PGraphics layer) {
+    if (curve.length < 2) return;
+    layer.strokeWeight(1);
+    layer.noFill();
+    layer.strokeCap(SQUARE);
+    Vec2D pos;
+    boolean inBlack = random(1) > .5;
+    boolean inBlackBefore = inBlack;
+    boolean switching = false;
+    int nDrawn = 0;
+    for (int i = 0; i < this.curve.length; i++) {
+      pos = this.curve[i];
+
+      if (i == 0) {
+        layer.stroke(inBlack ? 0 : 200);
+        layer.beginShape();
+        // double first
+        layer.curveVertex(pos.x, pos.y);
+      } else if (switching) {
+        layer.stroke(inBlack ? 0 : #f2f2f2);
+        // double last
+        layer.curveVertex(pos.x, pos.y);
+        layer.curveVertex(pos.x, pos.y);
+        layer.endShape();
+        layer.beginShape();
+        // double first
+        layer.curveVertex(pos.x, pos.y);
+      }
+
+      layer.curveVertex(pos.x, pos.y);
+      nDrawn++;
+
+      switching = random(1) < .8 && (nDrawn > 2);;
+      inBlackBefore = inBlack;
+      inBlack = switching ? !inBlack : inBlack;
+      nDrawn = switching ? 0 : nDrawn;
+
+      if (i == this.curve.length - 1) {
+        // double last
+        layer.curveVertex(pos.x, pos.y);
+        layer.endShape();
+      }
+    }
+  }
+
   void displayCurveSmooth(PGraphics layer) {
     layer.stroke(0, 0, 0, 50);
     layer.strokeWeight(2 * this.ribbonWid);
