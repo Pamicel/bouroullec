@@ -137,11 +137,11 @@ class ToolWindow extends PApplet {
   //
 
   void settings() {
-    this.size(200, 200);
+    this.size(TOOL_WIN_SIZE[0], TOOL_WIN_SIZE[1]);
   }
 
   void setup() {
-    this.surface.setLocation(1000, 500);
+    this.surface.setLocation(TOOL_WIN_XY[0], TOOL_WIN_XY[1]);
     this.padding = 20;
     this.xmin = this.padding;
     this.xmax = this.width - this.padding;

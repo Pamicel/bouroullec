@@ -5,11 +5,20 @@ import java.util.*;
 ToolWindow toolWindow;
 DisplayWindow displayWindow;
 
+boolean SECONDARY_MONITOR = true;
+int[] DISPLAY_WIN_SIZE = new int[]{800, 800};
+int[] TOOL_WIN_SIZE = new int[]{200, 200};
+int[] DISPLAY_WIN_XY = SECONDARY_MONITOR ? new int[]{-400, -1200} : new int[]{100, 100};
+int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0] + 200, DISPLAY_WIN_XY[1] + 200};
+
 void setup() {
+  // create the other windows
   toolWindow = new ToolWindow();
   displayWindow = new DisplayWindow();
-  displayWindow.savePath = this.sketchPath("");
-  this.surface.setLocation(200, 200);
+  // give other windows the correct folder location
+  displayWindow.path = this.sketchPath("");
+  // hide main window
+  this.surface.setVisible(false);
 }
 
 void draw() {noLoop();}
@@ -20,7 +29,7 @@ class DisplayWindow extends PApplet {
     PApplet.runSketch(new String[]{this.getClass().getName()}, this);
   }
 
-  public String savePath = "";
+  public String path = "";
   ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
   Vec2D[] resampledCurve = null;
   RibbonEndPositions ribbonEndPositions;
@@ -31,13 +40,13 @@ class DisplayWindow extends PApplet {
   // Processing methods
 
   void settings () {
-    size(800, 800);
+    size(DISPLAY_WIN_SIZE[0], DISPLAY_WIN_SIZE[1]);
     smooth();
   }
 
   void setup() {
     noFill();
-    this.surface.setLocation(100, 100);
+    this.surface.setLocation(DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1]);
     ribbonEndPositions = new RibbonEndPositions(width, height);
     ribbonsLayer = createGraphics(width, height);
     buttonsLayer = createGraphics(width, height);
@@ -97,19 +106,6 @@ class DisplayWindow extends PApplet {
     }
 
     return remaped;
-  }
-
-  void printRibbons() {
-    ribbonsLayer.beginDraw();
-    ribbonsLayer.clear();
-    ribbonsLayer.endDraw();
-    Ribbon currentRibbon;
-    for (int i = 0; i < ribbons.size(); i++) {
-      currentRibbon = ribbons.get(i);
-      ribbonsLayer.beginDraw();
-      currentRibbon.displayCurve(ribbonsLayer);
-      ribbonsLayer.endDraw();
-    }
   }
 
   void printNewRibbon(Ribbon ribbon) {
@@ -229,7 +225,7 @@ class DisplayWindow extends PApplet {
     if (key == ' ') {
       int date = (year() % 100) * 10000 + month() * 100 + day();
       int time = hour() * 10000 + minute() * 100 + second();
-      ribbonsLayer.save(savePath + "out/date-"+ date + "_time-"+ time + ".png");
+      ribbonsLayer.save(path + "out/date-"+ date + "_time-"+ time + ".png");
     }
   }
 }
