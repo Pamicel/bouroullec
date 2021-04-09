@@ -10,6 +10,7 @@ int[] DISPLAY_WIN_SIZE = new int[]{800, 800};
 int[] TOOL_WIN_SIZE = new int[]{200, 200};
 int[] DISPLAY_WIN_XY = SECONDARY_MONITOR ? new int[]{-400, -1200} : new int[]{100, 100};
 int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0] + 200, DISPLAY_WIN_XY[1] + 200};
+int RIBON_WID = 10;
 
 void setup() {
   // create the other windows
@@ -34,7 +35,7 @@ class DisplayWindow extends PApplet {
   Vec2D[] resampledCurve = null;
   RibbonEndPositions ribbonEndPositions;
   PGraphics ribbonsLayer, buttonsLayer, interactiveLayer;
-  final float LINEAR_DENSITY = 1.0 / 30; // 1 point every N pixels
+  final float LINEAR_DENSITY = 1.0 / 5; // 1 point every N pixels
   ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>();
 
   // Processing methods
@@ -110,7 +111,7 @@ class DisplayWindow extends PApplet {
 
   void printNewRibbon(Ribbon ribbon) {
     ribbonsLayer.beginDraw();
-    ribbon.displayCurveSmooth(ribbonsLayer);
+    ribbon.displayCurvePieces(ribbonsLayer);
     ribbonsLayer.endDraw();
   }
 

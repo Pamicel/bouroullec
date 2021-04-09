@@ -54,7 +54,7 @@ class Ribbon {
   Ribbon leftRibbon = null,
         rightRibbon = null;
 
-  float ribbonWid = 10.0;
+  float ribbonWid = RIBON_WID;
 
   Ribbon(Vec2D[] curve) {
     this.curve = curve;
@@ -124,9 +124,29 @@ class Ribbon {
     layer.endShape();
   }
 
+  void displayCurvePieces(PGraphics layer) {
+    if (curve.length < 2) return;
+    layer.noStroke();
+    Vec2D posA, posB, normA, normB;
+    float wid = this.ribbonWid / 2;
+    for (int i = 0; i < this.curve.length - 1; i++) {
+      posA = this.curve[i];
+      normA = this.normals[i];
+      posB = this.curve[i + 1];
+      normB = this.normals[i + 1];
+      layer.fill(0,0,0,round(random(1)) * 255);
+      layer.beginShape();
+      layer.vertex(posA.x + normA.x * wid, posA.y + normA.y * wid);
+      layer.vertex(posB.x + normB.x * wid, posB.y + normB.y * wid);
+      layer.vertex(posB.x - normB.x * wid, posB.y - normB.y * wid);
+      layer.vertex(posA.x - normA.x * wid, posA.y - normA.y * wid);
+      layer.endShape(CLOSE);
+    }
+  }
+
   void displayCurveSmooth(PGraphics layer) {
-    layer.stroke(0);
-    layer.strokeWeight(round(random(1, this.ribbonWid)));
+    layer.stroke(0, 0, 0, 50);
+    layer.strokeWeight(2 * this.ribbonWid);
     layer.noFill();
     layer.beginShape();
     Vec2D pos;
