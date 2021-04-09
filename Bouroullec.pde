@@ -21,6 +21,7 @@ void setup() {
   // give other windows the correct folder location
   displayWindow.path = this.sketchPath("");
   displayWindow.printWindow = printWindow;
+  printWindow.displayWindow = displayWindow;
   this.surface.setVisible(false);
 }
 
@@ -29,6 +30,8 @@ void draw() {noLoop();}
 class PrintWindow extends PApplet {
   public String path = "";
   public PImage image = null;
+  boolean showPosition = true;
+  DisplayWindow displayWindow = null;
 
   PrintWindow() {
     super();
@@ -44,7 +47,6 @@ class PrintWindow extends PApplet {
   }
 
   public void setImage(PImage img) {
-    println(this);
     this.image = img;
     this.loop();
   }
@@ -54,8 +56,22 @@ class PrintWindow extends PApplet {
     if (image != null) {
       this.image(this.image, 0, 0, this.width, this.height);
     }
-    println("draw");
+    if (showPosition && this.displayWindow != null) {
+      fill(0, 0, 0, 20);
+      noStroke();
+      rect(this.displayWindow.pos.x * this.width, this.displayWindow.pos.y * this.height, this.width / 2, this.height / 2);
+    }
     this.noLoop();
+  }
+
+  void mouseMoved() {
+    loop();
+  }
+
+  void keyPressed() {
+    if (key == ' ') {
+      this.showPosition = !this.showPosition;
+    }
   }
 }
 
@@ -65,6 +81,8 @@ class DisplayWindow extends PApplet {
     super();
     PApplet.runSketch(new String[]{this.getClass().getName()}, this);
   }
+
+  Vec2D pos = new Vec2D(0, 0);
 
   PrintWindow printWindow = null;
   public String path = "";
@@ -85,13 +103,12 @@ class DisplayWindow extends PApplet {
   void setup() {
     noFill();
     this.surface.setLocation(DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1]);
-    ribbonEndPositions = new RibbonEndPositions(width, height);
     ribbonsLayer = createGraphics(width * 2, height * 2);
-    buttonsLayer = createGraphics(width, height);
+    ribbonEndPositions = new RibbonEndPositions(ribbonsLayer.width, ribbonsLayer.height);
+    buttonsLayer = createGraphics(ribbonsLayer.width, ribbonsLayer.height);
   }
 
   void printComposition () {
-    println("Print occvldijgf");
     this.printWindow.setImage(this.ribbonsLayer.get());
   }
 
@@ -129,8 +146,16 @@ class DisplayWindow extends PApplet {
       }
       endShape();
     }
-    image(ribbonsLayer, 0, 0);
-    image(buttonsLayer, 0, 0);
+    image(
+      this.ribbonsLayer,
+      - this.pos.x * this.ribbonsLayer.width,
+      - this.pos.y * this.ribbonsLayer.height
+    );
+    image(
+      this.buttonsLayer,
+      - this.pos.x * this.buttonsLayer.width,
+      - this.pos.y * this.buttonsLayer.height
+    );
   }
 
   // Sketch methods
@@ -185,13 +210,19 @@ class DisplayWindow extends PApplet {
     ribbonEndPositions.addRibbon(newRibbon);
   }
 
+  Vec2D getCurrentTranslation() {
+    return new Vec2D(this.pos.x * this.ribbonsLayer.width, this.pos.y * this.ribbonsLayer.height);
+  }
+
   boolean isOverButton() {
-    ArrayList<Ribbon> ribbonsHere = ribbonEndPositions.getRibbonsAt(mouseX, mouseY);
+    Vec2D currentTranslation = this.getCurrentTranslation();
+    Vec2D mousePos = new Vec2D(mouseX + currentTranslation.x, mouseY + currentTranslation.y);
+    ArrayList<Ribbon> ribbonsHere = ribbonEndPositions.getRibbonsAt(mousePos.x, mousePos.y);
     int nRibbonsHere = ribbonsHere != null ? ribbonsHere.size() : 0;
     Ribbon current;
     for (int i = 0; i < nRibbonsHere; i++) {
       current = ribbonsHere.get(i);
-      if (current.isOverButton(mouseX, mouseY)) {
+      if (current.isOverButton(mousePos.x, mousePos.y)) {
         return true;
       }
     }
@@ -200,13 +231,15 @@ class DisplayWindow extends PApplet {
   }
 
   void extend() {
-    ArrayList<Ribbon> ribbonsHere = ribbonEndPositions.getRibbonsAt(mouseX, mouseY);
+    Vec2D currentTranslation = this.getCurrentTranslation();
+    Vec2D mousePos = new Vec2D(mouseX + currentTranslation.x, mouseY + currentTranslation.y);
+    ArrayList<Ribbon> ribbonsHere = ribbonEndPositions.getRibbonsAt(mousePos.x, mousePos.y);
     Vec2D[] variationCurve = toolWindow.getYNormalizedCurve();
     Ribbon current, newRibbon;
     int nRibbonsHere = ribbonsHere != null ? ribbonsHere.size() : 0;
     for (int i = 0; i < nRibbonsHere; i++) {
       current = ribbonsHere.get(i);
-      if (current.frontButtons.isHoverLeftBank(mouseX, mouseY) || current.backButtons.isHoverLeftBank(mouseX, mouseY)) {
+      if (current.frontButtons.isHoverLeftBank(mousePos.x, mousePos.y) || current.backButtons.isHoverLeftBank(mousePos.x, mousePos.y)) {
         newRibbon = current.createLeftRibbon(this.LINEAR_DENSITY, variationCurve);
         if (newRibbon != null) {
           current.assignLeftRibbon(newRibbon);
@@ -218,7 +251,7 @@ class DisplayWindow extends PApplet {
           printNewRibbon(newRibbon);
         }
       }
-      if (current.frontButtons.isHoverRightBank(mouseX, mouseY) || current.backButtons.isHoverRightBank(mouseX, mouseY)) {
+      if (current.frontButtons.isHoverRightBank(mousePos.x, mousePos.y) || current.backButtons.isHoverRightBank(mousePos.x, mousePos.y)) {
         newRibbon = current.createRightRibbon(this.LINEAR_DENSITY, variationCurve);
         if (newRibbon != null) {
           current.assignRightRibbon(newRibbon);
@@ -252,6 +285,14 @@ class DisplayWindow extends PApplet {
     curve.add(new Vec2D(mouseX, mouseY));
   }
 
+  Vec2D[] translateCurve(Vec2D[] curve, Vec2D translation) {
+    Vec2D[] newCurve = new Vec2D[curve.length];
+    for (int i = 0; i < curve.length; i++) {
+      newCurve[i] = curve[i].add(translation);
+    }
+    return newCurve;
+  }
+
   void mouseReleased() {
     extending = false;
 
@@ -261,6 +302,7 @@ class DisplayWindow extends PApplet {
     boolean emptyResample = false;
     if (drewCurve) {
       resampledCurve = densityResample(curve, this.LINEAR_DENSITY);
+      resampledCurve = translateCurve(resampledCurve, this.getCurrentTranslation());
       emptyResample = resampledCurve.length <= 1;
     }
 
@@ -289,6 +331,20 @@ class DisplayWindow extends PApplet {
     }
     if (key == 'p') {
       this.printComposition();
+    }
+    if(key == CODED) {
+      if (keyCode == LEFT) {
+        this.pos.x = this.pos.x - .1 >= 0 ? this.pos.x - .1 : this.pos.x;
+      }
+      if(keyCode == RIGHT) {
+        this.pos.x = this.pos.x + .1 <= .5 ? this.pos.x + .1 : this.pos.x;
+      }
+      if (keyCode == DOWN) {
+        this.pos.y = this.pos.y - .1 >= 0 ? this.pos.y - .1 : this.pos.y;
+      }
+      if(keyCode == UP) {
+        this.pos.y = this.pos.y + .1 <= .5 ? this.pos.y + .1 : this.pos.y;
+      }
     }
   }
 }

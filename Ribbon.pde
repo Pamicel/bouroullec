@@ -3,17 +3,17 @@ class RibbonEndButtons {
   float radius = 5;
   RibbonEndButtons () {}
 
-  private boolean isHover(Vec2D position, int mX, int mY) {
+  private boolean isHover(Vec2D position, float mX, float mY) {
     return position.distanceToSquared(new Vec2D(mX, mY)) < (this.radius * this.radius);
   }
 
-  boolean isHoverLeftBank(int mX, int mY) {
+  boolean isHoverLeftBank(float mX, float mY) {
     return this.leftBank != null && this.isHover(this.leftBank, mX, mY);
   }
-  boolean isHoverRightBank(int mX, int mY) {
+  boolean isHoverRightBank(float mX, float mY) {
     return this.rightBank != null && this.isHover(this.rightBank, mX, mY);
   }
-  boolean isHoverCenter(int mX, int mY) {
+  boolean isHoverCenter(float mX, float mY) {
     return this.center != null && this.isHover(this.center, mX, mY);
   }
 
@@ -72,7 +72,7 @@ class Ribbon {
     this.computeEndButtons();
   }
 
-  boolean isOverButton(int mX, int mY) {
+  boolean isOverButton(float mX, float mY) {
     boolean isOverBack = (
       this.backButtons != null &&
       (
@@ -402,7 +402,7 @@ class RibbonEndPositions {
     this.allRibbons.add(ribbon);
   }
 
-  ArrayList<Ribbon> getRibbonsAt(int mX, int mY) {
+  ArrayList<Ribbon> getRibbonsAt(float mX, float mY) {
     int index = this.positionIndex(new Vec2D(mX, mY));
     if (index < 0) return null;
     if (index >= this.ribbons.length) return null;
