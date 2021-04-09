@@ -4,25 +4,61 @@ import java.util.*;
 
 ToolWindow toolWindow;
 DisplayWindow displayWindow;
-
+PrintWindow printWindow;
 boolean SECONDARY_MONITOR = true;
 int[] DISPLAY_WIN_SIZE = new int[]{800, 800};
-int[] TOOL_WIN_SIZE = new int[]{200, 200};
 int[] DISPLAY_WIN_XY = SECONDARY_MONITOR ? new int[]{-400, -1200} : new int[]{100, 100};
-int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0] + 200, DISPLAY_WIN_XY[1] + 200};
-int RIBON_WID = 4;
+int[] TOOL_WIN_SIZE = new int[]{200, 200};
+int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0] + 100, DISPLAY_WIN_XY[1]};
+int[] PRINT_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0] + 100, TOOL_WIN_SIZE[1] + TOOL_WIN_XY[1] + 100};
+int RIBON_WID = 5;
 
 void setup() {
   // create the other windows
   toolWindow = new ToolWindow();
   displayWindow = new DisplayWindow();
+  printWindow = new PrintWindow();
   // give other windows the correct folder location
   displayWindow.path = this.sketchPath("");
-  // hide main window
+  displayWindow.printWindow = printWindow;
   this.surface.setVisible(false);
 }
 
 void draw() {noLoop();}
+
+class PrintWindow extends PApplet {
+  public String path = "";
+  public PImage image = null;
+
+  PrintWindow() {
+    super();
+    PApplet.runSketch(new String[]{this.getClass().getName()}, this);
+  }
+
+  void settings() {
+    size(600, 600);
+  }
+
+  void setup() {
+    this.surface.setLocation(PRINT_WIN_XY[0], PRINT_WIN_XY[1]);
+  }
+
+  public void setImage(PImage img) {
+    println(this);
+    this.image = img;
+    this.loop();
+  }
+
+  void draw() {
+    this.background(255);
+    if (image != null) {
+      this.image(this.image, 0, 0, this.width, this.height);
+    }
+    println("draw");
+    this.noLoop();
+  }
+}
+
 
 class DisplayWindow extends PApplet {
   DisplayWindow() {
@@ -30,11 +66,13 @@ class DisplayWindow extends PApplet {
     PApplet.runSketch(new String[]{this.getClass().getName()}, this);
   }
 
+  PrintWindow printWindow = null;
   public String path = "";
   ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
   Vec2D[] resampledCurve = null;
   RibbonEndPositions ribbonEndPositions;
   PGraphics ribbonsLayer, buttonsLayer, interactiveLayer;
+  PImage ribbonsLayerPrint;
   final float LINEAR_DENSITY = 1.0 / 5; // 1 point every N pixels
   ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>();
 
@@ -49,8 +87,24 @@ class DisplayWindow extends PApplet {
     noFill();
     this.surface.setLocation(DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1]);
     ribbonEndPositions = new RibbonEndPositions(width, height);
-    ribbonsLayer = createGraphics(width, height);
+    ribbonsLayer = createGraphics(width * 2, height * 2);
     buttonsLayer = createGraphics(width, height);
+  }
+
+  void printComposition () {
+    println("Print occvldijgf");
+    this.printWindow.setImage(this.ribbonsLayer.get());
+  }
+
+  void clearCanvas () {
+    this.ribbons = new ArrayList<Ribbon>();
+    this.ribbonsLayer.beginDraw();
+    this.ribbonsLayer.clear();
+    this.ribbonsLayer.endDraw();
+    this.buttonsLayer.beginDraw();
+    this.buttonsLayer.clear();
+    this.buttonsLayer.endDraw();
+    this.ribbonEndPositions = new RibbonEndPositions(width, height);
   }
 
   float signedAngle(Vec2D pos) {
@@ -76,7 +130,6 @@ class DisplayWindow extends PApplet {
       }
       endShape();
     }
-
     image(ribbonsLayer, 0, 0);
     image(buttonsLayer, 0, 0);
   }
@@ -111,7 +164,8 @@ class DisplayWindow extends PApplet {
 
   void printNewRibbon(Ribbon ribbon) {
     ribbonsLayer.beginDraw();
-    ribbon.displayCurvePiecesSmoothBW(ribbonsLayer);
+    ribbon.displayCurveSmooth(ribbonsLayer);
+    ribbon.displayConnections(ribbonsLayer);
     ribbonsLayer.endDraw();
   }
 
@@ -227,6 +281,15 @@ class DisplayWindow extends PApplet {
       int date = (year() % 100) * 10000 + month() * 100 + day();
       int time = hour() * 10000 + minute() * 100 + second();
       ribbonsLayer.save(path + "out/date-"+ date + "_time-"+ time + ".png");
+    }
+    if (key == 'e') {
+      int date = (year() % 100) * 10000 + month() * 100 + day();
+      int time = hour() * 10000 + minute() * 100 + second();
+      ribbonsLayer.save(path + "out/autosave-date-"+ date + "_time-"+ time + ".png");
+      this.clearCanvas();
+    }
+    if (key == 'p') {
+      this.printComposition();
     }
   }
 }

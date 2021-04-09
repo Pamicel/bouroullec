@@ -224,9 +224,33 @@ class Ribbon {
     }
   }
 
+  void displayConnections(PGraphics layer) {
+    Vec2D firstA, lastA, firstB, lastB;
+    firstA = this.curve[0];
+    lastA = this.curve[this.curve.length - 1];
+    layer.push();
+    layer.noFill();
+    layer.strokeWeight(2);
+    layer.stroke(255, 0, 0);
+    layer.strokeCap(PROJECT);
+    if (this.leftRibbon != null) {
+      firstB = this.leftRibbon.curve[0];
+      lastB = this.leftRibbon.curve[this.leftRibbon.curve.length - 1];
+      layer.line(firstA.x, firstA.y, firstB.x, firstB.y);
+      layer.line(lastA.x, lastA.y, lastB.x, lastB.y);
+    }
+    if (this.rightRibbon != null) {
+      firstB = this.rightRibbon.curve[0];
+      lastB = this.rightRibbon.curve[this.rightRibbon.curve.length - 1];
+      layer.line(firstA.x, firstA.y, firstB.x, firstB.y);
+      layer.line(lastA.x, lastA.y, lastB.x, lastB.y);
+    }
+    layer.pop();
+  }
+
   void displayCurveSmooth(PGraphics layer) {
-    layer.stroke(0, 0, 0, 50);
-    layer.strokeWeight(2 * this.ribbonWid);
+    layer.stroke(0);
+    layer.strokeWeight(1);
     layer.noFill();
     layer.beginShape();
     Vec2D pos;
