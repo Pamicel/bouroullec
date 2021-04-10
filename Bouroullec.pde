@@ -6,7 +6,7 @@ ToolWindow toolWindow;
 DisplayWindow displayWindow;
 PrintWindow printWindow;
 boolean SECONDARY_MONITOR = true;
-int[] DISPLAY_WIN_SIZE = new int[]{800, 800};
+int[] DISPLAY_WIN_SIZE = new int[]{1000, 1000};
 int[] DISPLAY_WIN_XY = SECONDARY_MONITOR ? new int[]{-400, -1200} : new int[]{100, 100};
 int[] TOOL_WIN_SIZE = new int[]{200, 200};
 int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0] + 100, DISPLAY_WIN_XY[1]};
@@ -59,7 +59,12 @@ class PrintWindow extends PApplet {
     if (showPosition && this.displayWindow != null) {
       fill(0, 0, 0, 20);
       noStroke();
-      rect(this.displayWindow.pos.x * this.width, this.displayWindow.pos.y * this.height, this.width / 2, this.height / 2);
+      rect(
+        this.displayWindow.pos.x * this.width,
+        this.displayWindow.pos.y * this.height,
+        this.width * this.displayWindow.sizeRatio,
+        this.height * this.displayWindow.sizeRatio
+      );
     }
     this.noLoop();
   }
@@ -83,6 +88,7 @@ class DisplayWindow extends PApplet {
   }
 
   Vec2D pos = new Vec2D(0, 0);
+  float sizeRatio = 1.0;
 
   PrintWindow printWindow = null;
   public String path = "";
@@ -103,7 +109,8 @@ class DisplayWindow extends PApplet {
   void setup() {
     noFill();
     this.surface.setLocation(DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1]);
-    ribbonsLayer = createGraphics(width * 2, height * 2);
+    ribbonsLayer = createGraphics(width * 4, height * 4);
+    sizeRatio = (float)this.width / this.ribbonsLayer.width;
     ribbonEndPositions = new RibbonEndPositions(ribbonsLayer.width, ribbonsLayer.height);
     buttonsLayer = createGraphics(ribbonsLayer.width, ribbonsLayer.height);
   }
@@ -334,16 +341,16 @@ class DisplayWindow extends PApplet {
     }
     if(key == CODED) {
       if (keyCode == LEFT) {
-        this.pos.x = this.pos.x - .1 >= 0 ? this.pos.x - .1 : this.pos.x;
+        this.pos.x = this.pos.x - .1 >= 0 ? this.pos.x - .1 : 0;
       }
       if(keyCode == RIGHT) {
-        this.pos.x = this.pos.x + .1 <= .5 ? this.pos.x + .1 : this.pos.x;
+        this.pos.x = this.pos.x + .1 <= 1.0 - sizeRatio ? this.pos.x + .1 : 1.0 - sizeRatio;
       }
       if (keyCode == DOWN) {
-        this.pos.y = this.pos.y - .1 >= 0 ? this.pos.y - .1 : this.pos.y;
+        this.pos.y = this.pos.y - .1 >= 0 ? this.pos.y - .1 : 0;
       }
       if(keyCode == UP) {
-        this.pos.y = this.pos.y + .1 <= .5 ? this.pos.y + .1 : this.pos.y;
+        this.pos.y = this.pos.y + .1 <= 1.0 - sizeRatio ? this.pos.y + .1 : 1.0 - sizeRatio;
       }
     }
   }
