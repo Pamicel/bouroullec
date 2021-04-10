@@ -109,10 +109,10 @@ class DisplayWindow extends PApplet {
   void setup() {
     noFill();
     this.surface.setLocation(DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1]);
-    ribbonsLayer = createGraphics(width * 4, height * 4);
-    sizeRatio = (float)this.width / this.ribbonsLayer.width;
-    ribbonEndPositions = new RibbonEndPositions(ribbonsLayer.width, ribbonsLayer.height);
-    buttonsLayer = createGraphics(ribbonsLayer.width, ribbonsLayer.height);
+    this.ribbonsLayer = createGraphics(width * 4, height * 4);
+    this.sizeRatio = (float)this.width / this.ribbonsLayer.width;
+    this.ribbonEndPositions = new RibbonEndPositions(ribbonsLayer.width, ribbonsLayer.height);
+    this.buttonsLayer = createGraphics(ribbonsLayer.width, ribbonsLayer.height);
   }
 
   void printComposition () {
@@ -127,7 +127,7 @@ class DisplayWindow extends PApplet {
     this.buttonsLayer.beginDraw();
     this.buttonsLayer.clear();
     this.buttonsLayer.endDraw();
-    this.ribbonEndPositions = new RibbonEndPositions(width, height);
+    this.ribbonEndPositions = new RibbonEndPositions(this.ribbonsLayer.width, this.ribbonsLayer.height);
   }
 
   float signedAngle(Vec2D pos) {
