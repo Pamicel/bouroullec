@@ -103,7 +103,7 @@ class DisplayWindow extends PApplet {
 
   void settings () {
     size(DISPLAY_WIN_SIZE[0], DISPLAY_WIN_SIZE[1]);
-    smooth();
+    // smooth();
   }
 
   void setup() {

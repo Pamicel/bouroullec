@@ -1,45 +1,95 @@
 class RibbonEndButtons {
-  Vec2D rightBank, leftBank, center;
+  private Vec2D rightBank, leftBank, center, leftDirection;
+  private Vec2D leftBankAnchorPoint, rightBankAnchorPoint;
   float radius = 5;
-  RibbonEndButtons () {}
+  float ribbonWid;
+  Ribbon ribbon;
 
-  private boolean isHover(Vec2D position, float mX, float mY) {
-    return position.distanceToSquared(new Vec2D(mX, mY)) < (this.radius * this.radius);
+  RibbonEndButtons (
+    Vec2D center,
+    float ribbonWid,
+    Vec2D leftDirection,
+    Ribbon ribbon
+  ) {
+    this.center = center;
+    this.leftDirection = leftDirection;
+    this.ribbonWid = ribbonWid;
+    this.ribbon = ribbon;
+
+    Vec2D normalizedDir = this.leftDirection.getNormalizedTo(ribbonWid);
+    this.leftBankAnchorPoint = this.center.add(normalizedDir);
+    this.rightBankAnchorPoint = this.center.sub(normalizedDir);
+
+    this.leftBank = this.leftBankAnchorPoint.add(normalizedDir.scale(2));
+    this.rightBank = this.rightBankAnchorPoint.sub(normalizedDir.scale(2));
+  }
+
+  Vec2D getCenter() {
+    return this.center;
+  }
+
+  Vec2D getLeft() {
+    if (ribbon.leftRibbon != null) {
+      this.leftBank = null;
+      this.leftBankAnchorPoint = null;
+    }
+    return this.leftBank;
+  }
+
+  Vec2D getRight() {
+    if (ribbon.rightRibbon != null) {
+      this.rightBank = null;
+      this.rightBankAnchorPoint = null;
+    }
+    return this.rightBank;
+  }
+
+  private boolean isHover(Vec2D position, float mX, float mY, float radius) {
+    return position.distanceToSquared(new Vec2D(mX, mY)) < (radius * radius);
   }
 
   boolean isHoverLeftBank(float mX, float mY) {
-    return this.leftBank != null && this.isHover(this.leftBank, mX, mY);
+    Vec2D left = this.getLeft();
+    return left != null && this.isHover(left, mX, mY, this.radius);
   }
   boolean isHoverRightBank(float mX, float mY) {
-    return this.rightBank != null && this.isHover(this.rightBank, mX, mY);
+    Vec2D right = this.getRight();
+    return right != null && this.isHover(right, mX, mY, this.radius);
   }
   boolean isHoverCenter(float mX, float mY) {
-    return this.center != null && this.isHover(this.center, mX, mY);
-  }
-
-  void deleteLeftBank() {
-    this.leftBank = null;
-  }
-  void deleteRightBank() {
-    this.rightBank = null;
-  }
-  void deleteCenter() {
-    this.center = null;
+    return this.isHover(this.center, mX, mY, this.radius);
   }
 
   void display(PGraphics layer) {
-    layer.noStroke();
+    Vec2D left = this.getLeft();
+    Vec2D right = this.getRight();
+
+    if (right != null) {
+      layer.push();
+      layer.strokeWeight(1);
+      layer.stroke(0, 255, 0);
+      layer.circle(right.x, right.y, this.radius);
+      layer.line(right.x, right.y, this.rightBankAnchorPoint.x, this.rightBankAnchorPoint.y);
+      layer.fill(0, 255, 0);
+      layer.circle(this.rightBankAnchorPoint.x, this.rightBankAnchorPoint.y, this.radius / 2);
+      layer.pop();
+    }
+    if (left != null) {
+      layer.push();
+      layer.strokeWeight(1);
+      layer.stroke(0, 0, 255);
+      layer.circle(left.x, left.y, this.radius);
+      layer.line(left.x, left.y, this.leftBankAnchorPoint.x, this.leftBankAnchorPoint.y);
+      layer.fill(0, 0, 255);
+      layer.circle(this.leftBankAnchorPoint.x, this.leftBankAnchorPoint.y, this.radius / 2);
+      layer.pop();
+    }
     if (this.center != null) {
+      layer.push();
+      layer.noStroke();
       layer.fill(255, 0, 0);
       layer.circle(this.center.x, this.center.y, this.radius);
-    }
-    if (this.rightBank != null) {
-      layer.fill(0, 255, 0);
-      layer.circle(this.rightBank.x, this.rightBank.y, this.radius);
-    }
-    if (this.leftBank != null) {
-      layer.fill(0, 0, 255);
-      layer.circle(this.leftBank.x, this.leftBank.y, this.radius);
+      layer.pop();
     }
   }
 }
@@ -93,22 +143,18 @@ class Ribbon {
   }
 
   boolean hasRightBank() {
-    return this.backButtons.rightBank != null && this.frontButtons.rightBank != null;
+    return this.rightRibbon != null;
   }
   boolean hasLeftBank() {
-    return this.backButtons.leftBank != null && this.frontButtons.leftBank != null;
+    return this.leftRibbon != null;
   }
 
   void assignLeftRibbon(Ribbon leftRibbon) {
     this.leftRibbon = leftRibbon;
-    this.frontButtons.deleteLeftBank();
-    this.backButtons.deleteLeftBank();
   }
 
   void assignRightRibbon(Ribbon rightRibbon) {
     this.rightRibbon = rightRibbon;
-    this.frontButtons.deleteRightBank();
-    this.backButtons.deleteRightBank();
   }
 
   void displayCurve(PGraphics layer) {
@@ -347,15 +393,18 @@ class Ribbon {
     Vec2D beforeLastPoint = this.curve[len - 2];
     Vec2D lastPoint = this.curve[len - 1];
 
-    this.frontButtons = new RibbonEndButtons();
-    this.backButtons = new RibbonEndButtons();
-
-    this.frontButtons.center = firstPoint;
-    this.frontButtons.leftBank = firstPoint.add(secondPoint.sub(firstPoint).getRotated(-HALF_PI).getNormalizedTo(this.ribbonWid / 2));
-    this.frontButtons.rightBank = firstPoint.add(secondPoint.sub(firstPoint).getRotated(HALF_PI).getNormalizedTo(this.ribbonWid / 2));
-    this.backButtons.rightBank = lastPoint.add(beforeLastPoint.sub(lastPoint).getRotated(-HALF_PI).getNormalizedTo(this.ribbonWid / 2));
-    this.backButtons.leftBank = lastPoint.add(beforeLastPoint.sub(lastPoint).getRotated(HALF_PI).getNormalizedTo(this.ribbonWid / 2));
-    this.backButtons.center = lastPoint;
+    this.frontButtons = new RibbonEndButtons(
+      firstPoint,
+      ribbonWid,
+      firstPoint.sub(secondPoint).getRotated(HALF_PI).getNormalized(),
+      this
+    );
+    this.backButtons = new RibbonEndButtons(
+      lastPoint,
+      ribbonWid,
+      lastPoint.sub(beforeLastPoint).getRotated(-HALF_PI).getNormalized(),
+      this
+    );
   }
 
   void displayEndButtons(PGraphics layer) {
@@ -418,12 +467,10 @@ class RibbonEndPositions {
 
   void removeRibbon(Ribbon ribbon) {
     HashSet<Integer> indices = new HashSet<Integer>();
-    indices.add(this.positionIndex(ribbon.frontButtons.center));
-    indices.add(this.positionIndex(ribbon.frontButtons.leftBank));
-    indices.add(this.positionIndex(ribbon.frontButtons.rightBank));
-    indices.add(this.positionIndex(ribbon.backButtons.center));
-    indices.add(this.positionIndex(ribbon.backButtons.leftBank));
-    indices.add(this.positionIndex(ribbon.backButtons.rightBank));
+    indices.add(this.positionIndex(ribbon.frontButtons.getLeft()));
+    indices.add(this.positionIndex(ribbon.frontButtons.getRight()));
+    indices.add(this.positionIndex(ribbon.backButtons.getLeft()));
+    indices.add(this.positionIndex(ribbon.backButtons.getRight()));
     Iterator<Integer> it = indices.iterator();
     while(it.hasNext()) {
       this.removeRibbonAt(it.next(), ribbon);
@@ -440,12 +487,10 @@ class RibbonEndPositions {
 
   void addRibbon(Ribbon ribbon) {
     HashSet<Integer> indices = new HashSet<Integer>();
-    indices.add(this.positionIndex(ribbon.frontButtons.center));
-    indices.add(this.positionIndex(ribbon.frontButtons.leftBank));
-    indices.add(this.positionIndex(ribbon.frontButtons.rightBank));
-    indices.add(this.positionIndex(ribbon.backButtons.center));
-    indices.add(this.positionIndex(ribbon.backButtons.leftBank));
-    indices.add(this.positionIndex(ribbon.backButtons.rightBank));
+    indices.add(this.positionIndex(ribbon.frontButtons.getLeft()));
+    indices.add(this.positionIndex(ribbon.frontButtons.getRight()));
+    indices.add(this.positionIndex(ribbon.backButtons.getLeft()));
+    indices.add(this.positionIndex(ribbon.backButtons.getRight()));
 
     Iterator<Integer> it = indices.iterator();
     while(it.hasNext()) {
