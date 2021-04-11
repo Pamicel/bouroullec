@@ -10,7 +10,7 @@ int[] DISPLAY_WIN_SIZE = new int[]{1000, 1000};
 int[] DISPLAY_WIN_XY = SECONDARY_MONITOR ? new int[]{-400, -1200} : new int[]{100, 100};
 int[] TOOL_WIN_SIZE = new int[]{200, 200};
 int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0] + 100, DISPLAY_WIN_XY[1]};
-int[] PRINT_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0] + 100, TOOL_WIN_SIZE[1] + TOOL_WIN_XY[1] + 100};
+int[] PRINT_WIN_XY = new int[]{TOOL_WIN_SIZE[0] + TOOL_WIN_XY[0] + 100, DISPLAY_WIN_XY[1]};
 int RIBON_WID = 5;
 
 void setup() {
@@ -256,6 +256,7 @@ class DisplayWindow extends PApplet {
           }
           addNewRibbon(newRibbon);
           printNewRibbon(newRibbon);
+          this.printRibbonButtons();
         }
       }
       if (current.frontButtons.isHoverRightBank(mousePos.x, mousePos.y) || current.backButtons.isHoverRightBank(mousePos.x, mousePos.y)) {
@@ -268,6 +269,7 @@ class DisplayWindow extends PApplet {
           }
           addNewRibbon(newRibbon);
           printNewRibbon(newRibbon);
+          this.printRibbonButtons();
         }
       };
     }
@@ -280,7 +282,6 @@ class DisplayWindow extends PApplet {
   void mouseDragged() {
     if (extending) {
       this.extend();
-      this.printRibbonButtons();
     } else {
       curve.add(new Vec2D(mouseX, mouseY));
     }
@@ -319,9 +320,8 @@ class DisplayWindow extends PApplet {
       newRibbon = new Ribbon(resampledCurve);
       addNewRibbon(newRibbon);
       printNewRibbon(newRibbon);
+      this.printRibbonButtons();
     }
-
-    printRibbonButtons();
   }
 
   void keyPressed() {
