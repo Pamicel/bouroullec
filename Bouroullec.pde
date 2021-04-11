@@ -1,5 +1,6 @@
 import toxi.geom.*;
 import java.util.*;
+import processing.svg.*;
 
 
 ToolWindow toolWindow;
@@ -17,10 +18,9 @@ int RIBON_WID = 5;
 void setup() {
   // create the other windows
   toolWindow = new ToolWindow();
-  displayWindow = new DisplayWindow();
+  displayWindow = new DisplayWindow(this.sketchPath(""));
   printWindow = new PrintWindow();
   // give other windows the correct folder location
-  displayWindow.path = this.sketchPath("");
   displayWindow.printWindow = printWindow;
   printWindow.displayWindow = displayWindow;
   this.surface.setVisible(false);
@@ -105,9 +105,10 @@ class PrintWindow extends PApplet {
 
 
 class DisplayWindow extends PApplet {
-  DisplayWindow() {
+  DisplayWindow(String path) {
     super();
     PApplet.runSketch(new String[]{this.getClass().getName()}, this);
+    this.path = path;
   }
 
   Vec2D pos = new Vec2D(0, 0);
@@ -116,7 +117,7 @@ class DisplayWindow extends PApplet {
   int[] canvasSize = null;
 
   PrintWindow printWindow = null;
-  public String path = "";
+  private String path = "";
   ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
   Vec2D[] resampledCurve = null;
   RibbonEndPositions ribbonEndPositions;
@@ -221,6 +222,17 @@ class DisplayWindow extends PApplet {
     }
 
     return remaped;
+  }
+
+  void printAllRibbonsToSVG() {
+    PGraphics svg = createGraphics(this.ribbonsLayer.width, this.ribbonsLayer.height, SVG, this.path + "output.svg");
+    Ribbon[] allRibbons = this.ribbonEndPositions.getAllRibbons();
+    svg.beginDraw();
+    for (int i = 0; i < allRibbons.length; i++) {
+      allRibbons[i].displayCurveSmooth(svg);
+    }
+    svg.dispose();
+    svg.endDraw();
   }
 
   void printNewRibbon(Ribbon ribbon) {
@@ -368,6 +380,9 @@ class DisplayWindow extends PApplet {
     }
     if (key == 'p') {
       this.printComposition();
+    }
+    if (key == 's') {
+      this.printAllRibbonsToSVG();
     }
     if(key == CODED) {
       if (keyCode == LEFT) {
