@@ -75,6 +75,9 @@ Vec2D[] regularResample (Vec2D[] curve, int newLen) {
 }
 
 Vec2D[] resample (Vec2D[] curve, int newLen) {
+  if (newLen <= 0) {
+    return new Vec2D[0];
+  }
   int currentLen = curve.length;
   // Ratio of current num of segments and desired num of segments
   float ratio = (float)(currentLen - 1) / (float)(newLen - 1);
