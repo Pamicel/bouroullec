@@ -251,7 +251,7 @@ class DisplayWindow extends PApplet {
         if (newRibbon != null) {
           current.assignLeftRibbon(newRibbon);
           newRibbon.assignRightRibbon(current);
-          if (!current.hasRightBank()) {
+          if (current.hasRightBank()) {
             ribbonEndPositions.removeRibbon(current);
           }
           addNewRibbon(newRibbon);
@@ -263,7 +263,7 @@ class DisplayWindow extends PApplet {
         if (newRibbon != null) {
           current.assignRightRibbon(newRibbon);
           newRibbon.assignLeftRibbon(current);
-          if (!current.hasLeftBank()) {
+          if (current.hasLeftBank()) {
             ribbonEndPositions.removeRibbon(current);
           }
           addNewRibbon(newRibbon);
