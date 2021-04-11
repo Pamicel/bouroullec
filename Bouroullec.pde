@@ -7,6 +7,7 @@ DisplayWindow displayWindow;
 PrintWindow printWindow;
 boolean SECONDARY_MONITOR = true;
 int[] DISPLAY_WIN_SIZE = new int[]{1000, 1000};
+int[] CANVAS_SIZE = new int[]{2100, 2970};
 int[] DISPLAY_WIN_XY = SECONDARY_MONITOR ? new int[]{-400, -1200} : new int[]{100, 100};
 int[] TOOL_WIN_SIZE = new int[]{200, 200};
 int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0] + 100, DISPLAY_WIN_XY[1]};
@@ -32,6 +33,8 @@ class PrintWindow extends PApplet {
   public PImage image = null;
   boolean showPosition = true;
   DisplayWindow displayWindow = null;
+  private float currentResRatio = 1.0;
+  boolean initialized = false;
 
   PrintWindow() {
     super();
@@ -44,15 +47,35 @@ class PrintWindow extends PApplet {
 
   void setup() {
     this.surface.setLocation(PRINT_WIN_XY[0], PRINT_WIN_XY[1]);
+    this.surface.setResizable(true);
   }
 
   public void setImage(PImage img) {
     this.image = img;
+    float resRatio = (float)this.image.width / this.image.height;
+    if (this.currentResRatio != resRatio) {
+      this.currentResRatio = resRatio;
+      if (resRatio > 1) {
+        println("this.surface.setSize(this.width, round(this.height / resRatio));");
+        this.surface.setSize(this.width, round(this.height / resRatio));
+      } else {
+        this.surface.setSize(round(this.width * resRatio), this.height);
+      }
+    }
+    this.initialized = true;
     this.loop();
   }
 
   void draw() {
     this.background(255);
+    if (!initialized) {
+      push();
+      textSize(30);
+      textAlign(CENTER, CENTER);
+      fill(0);
+      text("Press P in display window", width / 2, height / 2);
+      pop();
+    }
     if (image != null) {
       this.image(this.image, 0, 0, this.width, this.height);
     }
@@ -62,8 +85,8 @@ class PrintWindow extends PApplet {
       rect(
         this.displayWindow.pos.x * this.width,
         this.displayWindow.pos.y * this.height,
-        this.width * this.displayWindow.sizeRatio,
-        this.height * this.displayWindow.sizeRatio
+        this.width * this.displayWindow.xRatio,
+        this.height * this.displayWindow.yRatio
       );
     }
     this.noLoop();
@@ -88,7 +111,9 @@ class DisplayWindow extends PApplet {
   }
 
   Vec2D pos = new Vec2D(0, 0);
-  float sizeRatio = 1.0;
+  float xRatio = 1.0;
+  float yRatio = 1.0;
+  int[] canvasSize = null;
 
   PrintWindow printWindow = null;
   public String path = "";
@@ -103,14 +128,19 @@ class DisplayWindow extends PApplet {
 
   void settings () {
     size(DISPLAY_WIN_SIZE[0], DISPLAY_WIN_SIZE[1]);
-    // smooth();
   }
 
   void setup() {
     noFill();
     this.surface.setLocation(DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1]);
-    this.ribbonsLayer = createGraphics(width * 4, height * 4);
-    this.sizeRatio = (float)this.width / this.ribbonsLayer.width;
+    this.ribbonsLayer = createGraphics(CANVAS_SIZE[0], CANVAS_SIZE[1]);
+    // initialize ribbonsLayer (hack)
+    this.ribbonsLayer.beginDraw();
+    this.ribbonsLayer.clear();
+    this.ribbonsLayer.endDraw();
+    //
+    this.xRatio = (float)this.width / this.ribbonsLayer.width;
+    this.yRatio = (float)this.height / this.ribbonsLayer.height;
     this.ribbonEndPositions = new RibbonEndPositions(ribbonsLayer.width, ribbonsLayer.height);
     this.buttonsLayer = createGraphics(ribbonsLayer.width, ribbonsLayer.height);
   }
@@ -344,13 +374,13 @@ class DisplayWindow extends PApplet {
         this.pos.x = this.pos.x - .1 >= 0 ? this.pos.x - .1 : 0;
       }
       if(keyCode == RIGHT) {
-        this.pos.x = this.pos.x + .1 <= 1.0 - sizeRatio ? this.pos.x + .1 : 1.0 - sizeRatio;
+        this.pos.x = this.pos.x + .1 <= 1.0 - xRatio ? this.pos.x + .1 : 1.0 - xRatio;
       }
       if (keyCode == DOWN) {
         this.pos.y = this.pos.y - .1 >= 0 ? this.pos.y - .1 : 0;
       }
       if(keyCode == UP) {
-        this.pos.y = this.pos.y + .1 <= 1.0 - sizeRatio ? this.pos.y + .1 : 1.0 - sizeRatio;
+        this.pos.y = this.pos.y + .1 <= 1.0 - yRatio ? this.pos.y + .1 : 1.0 - yRatio;
       }
     }
   }
