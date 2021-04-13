@@ -75,7 +75,7 @@ Vec2D[] regularResample (Vec2D[] curve, int newLen) {
 }
 
 Vec2D[] resample (Vec2D[] curve, int newLen) {
-  if (newLen <= 0) {
+  if (newLen <= 1) {
     return new Vec2D[0];
   }
   int currentLen = curve.length;
