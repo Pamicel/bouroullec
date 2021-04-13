@@ -225,7 +225,9 @@ class DisplayWindow extends PApplet {
   }
 
   void printAllRibbonsToSVG() {
-    PGraphics svg = createGraphics(this.ribbonsLayer.width, this.ribbonsLayer.height, SVG, this.path + "output.svg");
+    int date = (year() % 100) * 10000 + month() * 100 + day();
+    int time = hour() * 10000 + minute() * 100 + second();
+    PGraphics svg = createGraphics(this.ribbonsLayer.width, this.ribbonsLayer.height, SVG, this.path + "out/date-"+ date + "_time-"+ time + ".svg");
     Ribbon[] allRibbons = this.ribbonEndPositions.getAllRibbons();
     svg.beginDraw();
     for (int i = 0; i < allRibbons.length; i++) {
