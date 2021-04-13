@@ -7,12 +7,12 @@ ToolWindow toolWindow;
 DisplayWindow displayWindow;
 PrintWindow printWindow;
 boolean SECONDARY_MONITOR = true;
-int[] DISPLAY_WIN_SIZE = new int[]{1000, 1000};
-int[] CANVAS_SIZE = new int[]{2100, 2970};
-int[] DISPLAY_WIN_XY = SECONDARY_MONITOR ? new int[]{-400, -1200} : new int[]{100, 100};
+int[] CANVAS_SIZE = new int[]{2000, 2000};
+int[] DISPLAY_WIN_SIZE = new int[] {1000, 1000};
+int[] DISPLAY_WIN_XY = SECONDARY_MONITOR ? new int[]{-400, -1200} : new int[]{50, 50};
 int[] TOOL_WIN_SIZE = new int[]{200, 200};
-int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0] + 100, DISPLAY_WIN_XY[1]};
-int[] PRINT_WIN_XY = new int[]{TOOL_WIN_SIZE[0] + TOOL_WIN_XY[0] + 100, DISPLAY_WIN_XY[1]};
+int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1]};
+int[] PRINT_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1] + TOOL_WIN_SIZE[1]};
 int RIBON_WID = 5;
 
 void setup() {
@@ -56,7 +56,6 @@ class PrintWindow extends PApplet {
     if (this.currentResRatio != resRatio) {
       this.currentResRatio = resRatio;
       if (resRatio > 1) {
-        println("this.surface.setSize(this.width, round(this.height / resRatio));");
         this.surface.setSize(this.width, round(this.height / resRatio));
       } else {
         this.surface.setSize(round(this.width * resRatio), this.height);
