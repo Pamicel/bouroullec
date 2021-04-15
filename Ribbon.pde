@@ -1,7 +1,7 @@
 class RibbonEndButtons {
   private Vec2D rightBank, leftBank, center, leftDirection;
   private Vec2D leftBankAnchorPoint, rightBankAnchorPoint;
-  float radius = 5;
+  float radius = 12;
   float ribbonWid;
   Ribbon ribbon;
 
@@ -84,19 +84,20 @@ class RibbonEndButtons {
       layer.circle(this.leftBankAnchorPoint.x, this.leftBankAnchorPoint.y, this.radius / 2);
       layer.pop();
     }
-    if (this.center != null) {
-      layer.push();
-      layer.noStroke();
-      layer.fill(255, 0, 0);
-      layer.circle(this.center.x, this.center.y, this.radius);
-      layer.pop();
-    }
+    // if (this.center != null) {
+    //   layer.push();
+    //   layer.noStroke();
+    //   layer.fill(255, 0, 0);
+    //   layer.circle(this.center.x, this.center.y, this.radius);
+    //   layer.pop();
+    // }
   }
 }
 
 class Ribbon {
   Vec2D[] curve = new Vec2D[0];
   Vec2D[] normals = new Vec2D[0];
+  color col = color(0);
 
   RibbonEndButtons frontButtons = null,
                   backButtons = null;
@@ -276,7 +277,7 @@ class Ribbon {
     lastA = this.curve[this.curve.length - 1];
     layer.push();
     layer.noFill();
-    layer.strokeWeight(2);
+    layer.strokeWeight(4);
     layer.stroke(255, 0, 0);
     layer.strokeCap(PROJECT);
     if (this.leftRibbon != null) {
@@ -295,8 +296,9 @@ class Ribbon {
   }
 
   void displayCurveSmooth(PGraphics layer) {
-    layer.stroke(0);
-    layer.strokeWeight(1);
+    layer.stroke(this.col);
+    layer.strokeCap(SQUARE);
+    layer.strokeWeight(this.ribbonWid + 2);
     layer.noFill();
     layer.beginShape();
     Vec2D pos;
@@ -309,6 +311,16 @@ class Ribbon {
       }
     }
     layer.endShape();
+  }
+
+
+  void displayCurvePoints(PGraphics layer) {
+    Vec2D pos;
+    for (int i = 0; i < this.curve.length; i++) {
+      layer.stroke(255, random(255));
+      pos = this.curve[i];
+      layer.point(pos.x, pos.y);
+    }
   }
 
   void displayNormals(PGraphics layer, int len) {
@@ -334,7 +346,9 @@ class Ribbon {
 
     newCurve = densityResample(newCurve, linearDensity);
     if (newCurve.length < 2) { return null; }
-    return new Ribbon(newCurve, variationCurve);
+    Ribbon left = new Ribbon(newCurve, variationCurve);
+    left.col = this.col;
+    return left;
   }
 
   Ribbon createRightRibbon(float linearDensity, Vec2D[] variationCurve) {
@@ -355,7 +369,9 @@ class Ribbon {
     newCurve = densityResample(newCurve, linearDensity);
 
     if (newCurve.length < 2) { return null; }
-    return new Ribbon(newCurve, invertedVariationCurve);
+    Ribbon right = new Ribbon(newCurve, invertedVariationCurve);
+    right.col = this.col;
+    return right;
   }
 
   Ribbon createRightRibbon(float linearDensity) {

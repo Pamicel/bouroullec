@@ -6,23 +6,41 @@ import processing.svg.*;
 ToolWindow toolWindow;
 DisplayWindow displayWindow;
 PrintWindow printWindow;
-boolean SECONDARY_MONITOR = true;
-int[] CANVAS_SIZE = new int[]{2000, 2000};
+boolean SECONDARY_MONITOR = false;
+int[] CANVAS_SIZE = new int[]{1000, 1000};
 int[] DISPLAY_WIN_SIZE = new int[] {1000, 1000};
 int[] DISPLAY_WIN_XY = SECONDARY_MONITOR ? new int[]{-400, -1200} : new int[]{50, 50};
 int[] TOOL_WIN_SIZE = new int[]{200, 200};
 int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1]};
-int[] PRINT_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1] + TOOL_WIN_SIZE[1]};
-int RIBON_WID = 5;
+int[] PRINT_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1] + TOOL_WIN_SIZE[1] + 50};
+int RIBON_WID = 2;
+color[] colors = new color[] {
+  // red
+  // 0xaaff0000,
+  // orange
+  0xaaffa500,
+  // yellow
+  0xaaffff00,
+  // green
+  0xaa008000,
+  // blue
+  // 0xaa0000ff,
+  // indigo
+  // 0xaa4b0082,
+  // violet
+  0xaaee82ee
+};
+int lastRibbonColorIndex = 0;
 
 void setup() {
   // create the other windows
+  pixelDensity(2);
   toolWindow = new ToolWindow();
   displayWindow = new DisplayWindow(this.sketchPath(""));
-  printWindow = new PrintWindow();
+  // printWindow = new PrintWindow();
   // give other windows the correct folder location
-  displayWindow.printWindow = printWindow;
-  printWindow.displayWindow = displayWindow;
+  // displayWindow.printWindow = printWindow;
+  // printWindow.displayWindow = displayWindow;
   this.surface.setVisible(false);
 }
 
@@ -66,7 +84,6 @@ class PrintWindow extends PApplet {
   }
 
   void draw() {
-    this.background(255);
     if (!initialized) {
       push();
       textSize(30);
@@ -114,6 +131,7 @@ class DisplayWindow extends PApplet {
   float xRatio = 1.0;
   float yRatio = 1.0;
   int[] canvasSize = null;
+  private float scale = 1.0;
 
   PrintWindow printWindow = null;
   private String path = "";
@@ -141,12 +159,15 @@ class DisplayWindow extends PApplet {
     //
     this.xRatio = (float)this.width / this.ribbonsLayer.width;
     this.yRatio = (float)this.height / this.ribbonsLayer.height;
+    this.scale = 1.0 / xRatio;
     this.ribbonEndPositions = new RibbonEndPositions(ribbonsLayer.width, ribbonsLayer.height);
     this.buttonsLayer = createGraphics(ribbonsLayer.width, ribbonsLayer.height);
   }
 
   void printComposition () {
-    this.printWindow.setImage(this.ribbonsLayer.get());
+    if (this.printWindow != null) {
+      this.printWindow.setImage(this.ribbonsLayer.get());
+    }
   }
 
   void clearCanvas () {
@@ -170,11 +191,11 @@ class DisplayWindow extends PApplet {
   }
 
   void draw() {
-    background(255);
+    this.background(0);
 
     Vec2D pos;
     if (mousePressed && !extending) {
-      stroke(0);
+      stroke(255);
       beginShape();
       for (int i = 0; i < curve.size(); i++) {
         pos = curve.get(i);
@@ -183,16 +204,18 @@ class DisplayWindow extends PApplet {
       }
       endShape();
     }
-    image(
-      this.ribbonsLayer,
-      - this.pos.x * this.ribbonsLayer.width,
-      - this.pos.y * this.ribbonsLayer.height
-    );
-    image(
-      this.buttonsLayer,
-      - this.pos.x * this.buttonsLayer.width,
-      - this.pos.y * this.buttonsLayer.height
-    );
+    // image(
+    //   this.ribbonsLayer,
+    //   - this.pos.x * this.ribbonsLayer.width,
+    //   - this.pos.y * this.ribbonsLayer.height
+    // );
+    // image(
+    //   this.buttonsLayer,
+    //   - this.pos.x * this.buttonsLayer.width,
+    //   - this.pos.y * this.buttonsLayer.height
+    // );
+    image(this.ribbonsLayer, 0, 0, width, height);
+    image(this.buttonsLayer, 0, 0, width, height);
   }
 
   // Sketch methods
@@ -238,8 +261,8 @@ class DisplayWindow extends PApplet {
 
   void printNewRibbon(Ribbon ribbon) {
     ribbonsLayer.beginDraw();
-    ribbon.displayCurveSmooth(ribbonsLayer);
-    ribbon.displayConnections(ribbonsLayer);
+    ribbon.displayCurvePoints(ribbonsLayer);
+    // ribbon.displayConnections(ribbonsLayer);
     ribbonsLayer.endDraw();
   }
 
@@ -266,7 +289,7 @@ class DisplayWindow extends PApplet {
 
   boolean isOverButton() {
     Vec2D currentTranslation = this.getCurrentTranslation();
-    Vec2D mousePos = new Vec2D(mouseX + currentTranslation.x, mouseY + currentTranslation.y);
+    Vec2D mousePos = new Vec2D(mouseX + currentTranslation.x, mouseY + currentTranslation.y).scale(this.scale);
     ArrayList<Ribbon> ribbonsHere = ribbonEndPositions.getRibbonsAt(mousePos.x, mousePos.y);
     int nRibbonsHere = ribbonsHere != null ? ribbonsHere.size() : 0;
     Ribbon current;
@@ -282,7 +305,7 @@ class DisplayWindow extends PApplet {
 
   void extend() {
     Vec2D currentTranslation = this.getCurrentTranslation();
-    Vec2D mousePos = new Vec2D(mouseX + currentTranslation.x, mouseY + currentTranslation.y);
+    Vec2D mousePos = new Vec2D(mouseX, mouseY).scale(this.scale);
     ArrayList<Ribbon> ribbonsHere = ribbonEndPositions.getRibbonsAt(mousePos.x, mousePos.y);
     Vec2D[] variationCurve = toolWindow.getYNormalizedCurve();
     Ribbon current, newRibbon;
@@ -344,6 +367,14 @@ class DisplayWindow extends PApplet {
     return newCurve;
   }
 
+  Vec2D[] rescaleCurve(Vec2D[] curve, float scale) {
+    Vec2D[] newCurve = new Vec2D[curve.length];
+    for (int i = 0; i < curve.length; i++) {
+      newCurve[i] = curve[i].scale(scale);
+    }
+    return newCurve;
+  }
+
   void mouseReleased() {
     extending = false;
 
@@ -354,6 +385,7 @@ class DisplayWindow extends PApplet {
     if (drewCurve) {
       resampledCurve = densityResample(curve, this.LINEAR_DENSITY);
       resampledCurve = translateCurve(resampledCurve, this.getCurrentTranslation());
+      resampledCurve = rescaleCurve(resampledCurve, this.scale);
       emptyResample = resampledCurve.length <= 1;
     }
 
@@ -361,6 +393,8 @@ class DisplayWindow extends PApplet {
       this.extend();
     } else if (!emptyResample) {
       newRibbon = new Ribbon(resampledCurve);
+      newRibbon.col = colors[lastRibbonColorIndex];
+      lastRibbonColorIndex = (lastRibbonColorIndex + 1) % colors.length;
       addNewRibbon(newRibbon);
       printNewRibbon(newRibbon);
       this.printRibbonButtons();
@@ -384,6 +418,9 @@ class DisplayWindow extends PApplet {
     }
     if (key == 's') {
       this.printAllRibbonsToSVG();
+    }
+    if(key == 'c') {
+      lastRibbonColorIndex = (lastRibbonColorIndex + 1) % colors.length;
     }
     if(key == CODED) {
       if (keyCode == LEFT) {

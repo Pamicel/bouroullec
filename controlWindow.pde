@@ -172,6 +172,11 @@ class ToolWindow extends PApplet {
     }
     this.drawFinalCurve(this.finalCurveLayer);
     this.image(this.finalCurveLayer, 0, 0);
+    this.push();
+    this.fill(colors[lastRibbonColorIndex]);
+    this.noStroke();
+    this.circle(width - 40, height - 40, 30);
+    this.pop();
   }
 
   void mouseDragged() {

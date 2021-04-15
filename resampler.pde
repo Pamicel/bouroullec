@@ -56,7 +56,15 @@ Vec2D[] regularResample (Vec2D[] curve, int newLen) {
 
     // only keep the points that are at least 95% of minDist away from each other
     Vec2D currentPoint, lastAddedPoint;
-    curveRegular.add(upSample[0]);
+    try {
+      curveRegular.add(upSample[0]);
+    } catch (Exception e) {
+      println(curve);
+      println("currentLen: "+currentLen);
+      println("currentLen * variation: "+currentLen * variation);
+      println(upSample);
+      throw e;
+    }
     for (int i = 1; i < upSample.length - 1; i++) {
       currentPoint = upSample[i];
       lastAddedPoint = curveRegular.get(curveRegular.size() - 1);
