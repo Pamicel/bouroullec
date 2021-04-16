@@ -344,7 +344,7 @@ class Ribbon {
       newCurve[index] = this.curve[index].copy().add(this.normals[index].getNormalizedTo(this.ribbonWid));
     }
 
-    newCurve = densityResample(newCurve, linearDensity);
+    // newCurve = densityResample(newCurve, linearDensity);
     if (newCurve.length < 2) { return null; }
     Ribbon left = new Ribbon(newCurve, variationCurve);
     left.col = this.col;
@@ -366,7 +366,7 @@ class Ribbon {
     for (int index = 0; index < newCurve.length; index++) {
       newCurve[index] = this.curve[index].copy().sub(this.normals[index].getNormalizedTo(this.ribbonWid));
     }
-    newCurve = densityResample(newCurve, linearDensity);
+    // newCurve = densityResample(newCurve, linearDensity);
 
     if (newCurve.length < 2) { return null; }
     Ribbon right = new Ribbon(newCurve, invertedVariationCurve);
