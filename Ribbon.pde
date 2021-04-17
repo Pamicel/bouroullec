@@ -317,7 +317,7 @@ class Ribbon {
   void displayCurvePoints(PGraphics layer) {
     Vec2D pos;
     for (int i = 0; i < this.curve.length; i++) {
-      layer.stroke(255, random(255));
+      layer.stroke(this.col, random(255));
       pos = this.curve[i];
       layer.point(pos.x, pos.y);
     }
@@ -344,7 +344,7 @@ class Ribbon {
       newCurve[index] = this.curve[index].copy().add(this.normals[index].getNormalizedTo(this.ribbonWid));
     }
 
-    // newCurve = densityResample(newCurve, linearDensity);
+    newCurve = densityResample(newCurve, linearDensity);
     if (newCurve.length < 2) { return null; }
     Ribbon left = new Ribbon(newCurve, variationCurve);
     left.col = this.col;
@@ -366,7 +366,7 @@ class Ribbon {
     for (int index = 0; index < newCurve.length; index++) {
       newCurve[index] = this.curve[index].copy().sub(this.normals[index].getNormalizedTo(this.ribbonWid));
     }
-    // newCurve = densityResample(newCurve, linearDensity);
+    newCurve = densityResample(newCurve, linearDensity);
 
     if (newCurve.length < 2) { return null; }
     Ribbon right = new Ribbon(newCurve, invertedVariationCurve);

@@ -14,27 +14,21 @@ int[] TOOL_WIN_SIZE = new int[]{200, 200};
 int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1]};
 int[] PRINT_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1] + TOOL_WIN_SIZE[1] + 50};
 int RIBON_WID = 2;
-color[] colors = new color[] {
-  // red
-  // 0xaaff0000,
-  // orange
-  0xaaffa500,
-  // yellow
-  0xaaffff00,
-  // green
-  0xaa008000,
-  // blue
-  // 0xaa0000ff,
-  // indigo
-  // 0xaa4b0082,
-  // violet
-  0xaaee82ee
-};
+color[] colors = null;
 int lastRibbonColorIndex = 0;
 
 void setup() {
   // create the other windows
-  pixelDensity(2);
+  int colorsLen = 12;
+  colors = new color[colorsLen];
+  float r, g, b, x;
+  for (int i = 0; i < colorsLen; i++) {
+    x = ((float)i/colorsLen) * 2 - 1;
+    r = 255 * (.5 + .5 * cos(TWO_PI * x ));
+    g = 255 * (.5 + .5 * cos(TWO_PI * x  + .1));
+    b = 255 * (.5 + .5 * cos(TWO_PI * x  + .2));
+    colors[i] = color(r,g,b);
+  }
   toolWindow = new ToolWindow();
   displayWindow = new DisplayWindow(this.sketchPath(""));
   // printWindow = new PrintWindow();
