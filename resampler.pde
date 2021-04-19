@@ -39,9 +39,11 @@ Vec2D[] regularResample (Vec2D[] curve, int newLen) {
   for (int i = 1; i < currentLen - 1; i++) {
     pointB = curve[i];
     float distance = pointA.distanceTo(pointB);
-    if (minDist == 0 || distance < minDist) {
+    // save the shortest distance so far that is not 0
+    if (distance > 0 && (minDist == 0 || distance < minDist)) {
       minDist = distance;
     }
+    // save the longest distance so far
     if (distance > maxDist) {
       maxDist = distance;
     }
