@@ -106,6 +106,7 @@ class Ribbon {
         rightRibbon = null;
 
   float ribbonWid = RIBON_WID;
+  float linearDensity = LINEAR_DENSITY;
 
   Ribbon(Vec2D[] curve) {
     this.curve = curve;
@@ -313,13 +314,33 @@ class Ribbon {
     layer.endShape();
   }
 
+  void displayCurveLines(PGraphics layer) {
+    Vec2D pos, norm;
+    for (int i = 0; i < this.curve.length; i++) {
+      layer.stroke(200, random(100, 255));
+      pos = this.curve[i];
+      norm = this.normals[i];
+      layer.line(pos.x, pos.y, pos.x - norm.y / this.linearDensity, pos.y + norm.x / this.linearDensity);
+    }
+  }
 
   void displayCurvePoints(PGraphics layer) {
     Vec2D pos;
     for (int i = 0; i < this.curve.length; i++) {
-      layer.stroke(this.col, random(255));
+      layer.stroke(255, random(255));
       pos = this.curve[i];
       layer.point(pos.x, pos.y);
+    }
+  }
+
+  void displayCurveBigPoints(PGraphics layer) {
+    Vec2D pos;
+    layer.strokeWeight(2);
+    for (int i = 0; i < this.curve.length; i++) {
+      if (random(1) > .5) continue;
+      layer.stroke(this.col);
+      pos = this.curve[i];
+      layer.line(pos.x - 1, pos.y - 4, pos.x + 1, pos.y + 4);
     }
   }
 
@@ -338,20 +359,20 @@ class Ribbon {
     }
   }
 
-  Ribbon createLeftRibbon(float linearDensity, Vec2D[] variationCurve) {
+  Ribbon createLeftRibbon(Vec2D[] variationCurve) {
     Vec2D[] newCurve = new Vec2D[this.curve.length];
     for (int index = 0; index < newCurve.length; index++) {
       newCurve[index] = this.curve[index].copy().add(this.normals[index].getNormalizedTo(this.ribbonWid));
     }
 
-    newCurve = densityResample(newCurve, linearDensity);
+    newCurve = densityResample(newCurve, this.linearDensity);
     if (newCurve.length < 2) { return null; }
     Ribbon left = new Ribbon(newCurve, variationCurve);
     left.col = this.col;
     return left;
   }
 
-  Ribbon createRightRibbon(float linearDensity, Vec2D[] variationCurve) {
+  Ribbon createRightRibbon(Vec2D[] variationCurve) {
     Vec2D[] invertedVariationCurve = null;
     Vec2D[] newCurve = new Vec2D[this.curve.length];
 
@@ -366,7 +387,7 @@ class Ribbon {
     for (int index = 0; index < newCurve.length; index++) {
       newCurve[index] = this.curve[index].copy().sub(this.normals[index].getNormalizedTo(this.ribbonWid));
     }
-    newCurve = densityResample(newCurve, linearDensity);
+    newCurve = densityResample(newCurve, this.linearDensity);
 
     if (newCurve.length < 2) { return null; }
     Ribbon right = new Ribbon(newCurve, invertedVariationCurve);
@@ -374,12 +395,12 @@ class Ribbon {
     return right;
   }
 
-  Ribbon createRightRibbon(float linearDensity) {
-    return this.createRightRibbon(linearDensity, null);
+  Ribbon createRightRibbon() {
+    return this.createRightRibbon(null);
   }
 
-  Ribbon createLeftRibbon(float linearDensity) {
-    return this.createLeftRibbon(linearDensity, null);
+  Ribbon createLeftRibbon() {
+    return this.createLeftRibbon(null);
   }
 
   void applyVariationsToCurve(Vec2D[] variations) {
@@ -390,14 +411,22 @@ class Ribbon {
     }
   }
 
+  private Vec2D perpendicularCounterClockwise(Vec2D vec) {
+    return new Vec2D(-vec.y, vec.x);
+  }
+
+  private Vec2D normalOf2Points(Vec2D ptA, Vec2D ptB) {
+    return this.perpendicularCounterClockwise(ptA.sub(ptB).getNormalized());
+  }
+
   private void computeCurveNormals() {
     if (this.curve.length <= 1) { return; }
     Vec2D[] curve = this.curve;
     this.normals = new Vec2D[curve.length];
-    this.normals[0] = curve[0].sub(curve[1]).getRotated(HALF_PI).getNormalized();
-    this.normals[curve.length - 1] = curve[curve.length - 2].sub(curve[curve.length - 1]).getRotated(HALF_PI).getNormalized();
+    this.normals[0] = this.normalOf2Points(curve[0], curve[1]);
+    this.normals[curve.length - 1] = this.normalOf2Points(curve[curve.length - 2], curve[curve.length - 1]);
     for (int i = 1; i < curve.length - 1; i++) {
-      this.normals[i] = curve[i - 1].sub(curve[i + 1]).getRotated(HALF_PI).getNormalized();
+      this.normals[i] = this.normalOf2Points(curve[i - 1], curve[i + 1]);
     }
   }
 

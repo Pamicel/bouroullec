@@ -14,6 +14,7 @@ int[] TOOL_WIN_SIZE = new int[]{200, 200};
 int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1]};
 int[] PRINT_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1] + TOOL_WIN_SIZE[1] + 50};
 int RIBON_WID = 2;
+float LINEAR_DENSITY = 1.0 / 5; // 1 point every N pixels
 color[] colors = null;
 int lastRibbonColorIndex = 0;
 
@@ -133,7 +134,6 @@ class DisplayWindow extends PApplet {
   Vec2D[] resampledCurve = null;
   RibbonEndPositions ribbonEndPositions;
   PGraphics ribbonsLayer, buttonsLayer, interactiveLayer;
-  final float LINEAR_DENSITY = 1.0 / 5; // 1 point every N pixels
   ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>();
 
   // Processing methods
@@ -255,7 +255,7 @@ class DisplayWindow extends PApplet {
 
   void printNewRibbon(Ribbon ribbon) {
     ribbonsLayer.beginDraw();
-    ribbon.displayCurvePoints(ribbonsLayer);
+    ribbon.displayCurveLines(ribbonsLayer);
     // ribbon.displayConnections(ribbonsLayer);
     ribbonsLayer.endDraw();
   }
@@ -307,7 +307,7 @@ class DisplayWindow extends PApplet {
     for (int i = 0; i < nRibbonsHere; i++) {
       current = ribbonsHere.get(i);
       if (current.frontButtons.isHoverLeftBank(mousePos.x, mousePos.y) || current.backButtons.isHoverLeftBank(mousePos.x, mousePos.y)) {
-        newRibbon = current.createLeftRibbon(this.LINEAR_DENSITY, variationCurve);
+        newRibbon = current.createLeftRibbon(variationCurve);
         if (newRibbon != null) {
           current.assignLeftRibbon(newRibbon);
           newRibbon.assignRightRibbon(current);
@@ -320,7 +320,7 @@ class DisplayWindow extends PApplet {
         }
       }
       if (current.frontButtons.isHoverRightBank(mousePos.x, mousePos.y) || current.backButtons.isHoverRightBank(mousePos.x, mousePos.y)) {
-        newRibbon = current.createRightRibbon(this.LINEAR_DENSITY, variationCurve);
+        newRibbon = current.createRightRibbon(variationCurve);
         if (newRibbon != null) {
           current.assignRightRibbon(newRibbon);
           newRibbon.assignLeftRibbon(current);
@@ -377,7 +377,7 @@ class DisplayWindow extends PApplet {
     boolean drewCurve = curve.size() > 1;
     boolean emptyResample = false;
     if (drewCurve) {
-      resampledCurve = densityResample(curve, this.LINEAR_DENSITY);
+      resampledCurve = densityResample(curve, LINEAR_DENSITY);
       resampledCurve = translateCurve(resampledCurve, this.getCurrentTranslation());
       resampledCurve = rescaleCurve(resampledCurve, this.scale);
       emptyResample = resampledCurve.length <= 1;
