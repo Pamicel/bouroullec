@@ -315,12 +315,13 @@ class Ribbon {
   }
 
   void displayCurveLines(PGraphics layer) {
-    Vec2D pos, norm;
-    for (int i = 0; i < this.curve.length; i++) {
-      layer.stroke(200, random(100, 255));
+    Vec2D pos, prevPos, norm;
+    for (int i = 1; i < this.curve.length; i++) {
       pos = this.curve[i];
+      prevPos = this.curve[i - 1];
       norm = this.normals[i];
-      layer.line(pos.x, pos.y, pos.x - norm.y / this.linearDensity, pos.y + norm.x / this.linearDensity);
+      layer.stroke(200, 255 * ((norm.x * abs(norm.x) + norm.y * abs(norm.y) + 1) / 2));
+      layer.line(pos.x, pos.y, prevPos.x, prevPos.y);
     }
   }
 

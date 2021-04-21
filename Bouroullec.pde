@@ -14,7 +14,7 @@ int[] TOOL_WIN_SIZE = new int[]{200, 200};
 int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1]};
 int[] PRINT_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1] + TOOL_WIN_SIZE[1] + 50};
 int RIBON_WID = 2;
-float LINEAR_DENSITY = 1.0 / 5; // 1 point every N pixels
+float LINEAR_DENSITY = 1.0 / 30; // 1 point every N pixels
 color[] colors = null;
 int lastRibbonColorIndex = 0;
 
