@@ -106,6 +106,7 @@ class Ribbon {
         rightRibbon = null;
 
   float ribbonWid = RIBON_WID;
+  float ribbonGapFactor = RIBBON_GAP_FACTOR;
 
   Ribbon(Vec2D[] curve) {
     this.curve = curve;
@@ -298,7 +299,7 @@ class Ribbon {
   void displayCurveSmooth(PGraphics layer) {
     layer.stroke(this.col);
     layer.strokeCap(SQUARE);
-    layer.strokeWeight(this.ribbonWid + 2);
+    layer.strokeWeight(this.ribbonWid);
     layer.noFill();
     layer.beginShape();
     Vec2D pos;
@@ -341,7 +342,7 @@ class Ribbon {
   Ribbon createLeftRibbon(float linearDensity, Vec2D[] variationCurve) {
     Vec2D[] newCurve = new Vec2D[this.curve.length];
     for (int index = 0; index < newCurve.length; index++) {
-      newCurve[index] = this.curve[index].copy().add(this.normals[index].getNormalizedTo(this.ribbonWid));
+      newCurve[index] = this.curve[index].copy().add(this.normals[index].getNormalizedTo(this.ribbonWid * this.ribbonGapFactor));
     }
 
     newCurve = densityResample(newCurve, linearDensity);
@@ -364,7 +365,7 @@ class Ribbon {
     }
 
     for (int index = 0; index < newCurve.length; index++) {
-      newCurve[index] = this.curve[index].copy().sub(this.normals[index].getNormalizedTo(this.ribbonWid));
+      newCurve[index] = this.curve[index].copy().sub(this.normals[index].getNormalizedTo(this.ribbonWid * this.ribbonGapFactor));
     }
     newCurve = densityResample(newCurve, linearDensity);
 
@@ -386,7 +387,7 @@ class Ribbon {
     Vec2D[] resampledVariations = regularResample(variations, this.curve.length);
 
     for (int j = 0; j < this.curve.length; j++) {
-      this.curve[j] = this.curve[j].add(this.normals[j].getNormalizedTo(this.ribbonWid * resampledVariations[j].y));
+      this.curve[j] = this.curve[j].add(this.normals[j].getNormalizedTo(this.ribbonWid * this.ribbonGapFactor * resampledVariations[j].y));
     }
   }
 

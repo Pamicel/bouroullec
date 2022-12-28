@@ -7,28 +7,36 @@ ToolWindow toolWindow;
 DisplayWindow displayWindow;
 PrintWindow printWindow;
 boolean SECONDARY_MONITOR = false;
-int[] CANVAS_SIZE = new int[]{1000, 1000};
-int[] DISPLAY_WIN_SIZE = new int[] {1000, 1000};
-int[] DISPLAY_WIN_XY = SECONDARY_MONITOR ? new int[]{-400, -1200} : new int[]{50, 50};
+int[] CANVAS_SIZE = new int[]{2100 / 3, 2970 / 3};
+int[] DISPLAY_WIN_SIZE = new int[]{2100 / 3, 2970 / 3};
+int[] DISPLAY_WIN_XY = SECONDARY_MONITOR ? new int[]{600, -2000} : new int[]{50, 50};
 int[] TOOL_WIN_SIZE = new int[]{200, 200};
 int[] TOOL_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1]};
 int[] PRINT_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_WIN_XY[1] + TOOL_WIN_SIZE[1] + 50};
-int RIBON_WID = 2;
+int RIBON_WID = 1;
+color WINDOW_BACKROUNG_COLOR = 0xffffffff;
+color MOUSE_STROKE_COLOR = 0xff000000;
+float RIBBON_GAP_FACTOR = 3.0;
+float DISPLAY_WINDOW_LINEAR_DENSITY = 1.0 / 10.0; // 1 point every N pixels
 color[] colors = new color[] {
   // red
   // 0xaaff0000,
   // orange
-  0xaaffa500,
+  // 0xaaffa500,
   // yellow
-  0xaaffff00,
+  // 0xaaffff00,
   // green
-  0xaa008000,
+  // 0xaa008000,
   // blue
   // 0xaa0000ff,
   // indigo
   // 0xaa4b0082,
   // violet
-  0xaaee82ee
+  // 0xaaee82ee
+  // white
+  // 0xffffffff
+  // black
+  0xff000000
 };
 int lastRibbonColorIndex = 0;
 
@@ -139,7 +147,7 @@ class DisplayWindow extends PApplet {
   Vec2D[] resampledCurve = null;
   RibbonEndPositions ribbonEndPositions;
   PGraphics ribbonsLayer, buttonsLayer, interactiveLayer;
-  final float LINEAR_DENSITY = 1.0 / 5; // 1 point every N pixels
+  final float LINEAR_DENSITY = DISPLAY_WINDOW_LINEAR_DENSITY;
   ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>();
 
   // Processing methods
@@ -191,11 +199,11 @@ class DisplayWindow extends PApplet {
   }
 
   void draw() {
-    this.background(0);
+    this.background(WINDOW_BACKROUNG_COLOR);
 
     Vec2D pos;
     if (mousePressed && !extending) {
-      stroke(255);
+      stroke(MOUSE_STROKE_COLOR);
       beginShape();
       for (int i = 0; i < curve.size(); i++) {
         pos = curve.get(i);
@@ -261,7 +269,7 @@ class DisplayWindow extends PApplet {
 
   void printNewRibbon(Ribbon ribbon) {
     ribbonsLayer.beginDraw();
-    ribbon.displayCurvePoints(ribbonsLayer);
+    ribbon.displayCurveSmooth(ribbonsLayer);
     // ribbon.displayConnections(ribbonsLayer);
     ribbonsLayer.endDraw();
   }
