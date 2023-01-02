@@ -1,9 +1,104 @@
+class Rectangle {
+  Vec2D pointA, pointB, pointC, pointD;
+  float area;
+
+  Rectangle(Vec2D arrowStart, float arrowLength, float arrowWidth, float arrowHeading) {
+    Vec2D pointA = arrowStart.add(new Vec2D(0, arrowWidth / 2).rotate(arrowHeading));
+    Vec2D pointB = arrowStart.add(new Vec2D(arrowLength, arrowWidth / 2).rotate(arrowHeading));
+    Vec2D pointC = arrowStart.add(new Vec2D(arrowLength, -arrowWidth / 2).rotate(arrowHeading));
+    Vec2D pointD = arrowStart.add(new Vec2D(0, -arrowWidth / 2).rotate(arrowHeading));
+    this.initialize(pointA, pointB, pointC, pointD);
+  }
+
+  private void initialize(Vec2D pointA, Vec2D pointB, Vec2D pointC, Vec2D pointD) {
+    this.pointA = pointA;
+    this.pointB = pointB;
+    this.pointC = pointC;
+    this.pointD = pointD;
+    this.area = areaOfATriangle(this.pointA, this.pointB, this.pointC) +
+                areaOfATriangle(this.pointA, this.pointC, this.pointD);
+  }
+
+  private float areaOfATriangle(Vec2D a, Vec2D b, Vec2D c) {
+    return abs((a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y)) / 2.0f);
+  }
+
+  boolean isInside(Vec2D point, float epsilon) {
+    // Calculate the sum of areas of △APD, △DPC, △CPB, △PBA.
+    // If the sum is equal to the area of the rectangle, then the point lies inside the rectangle.
+    float areaOfAPD = areaOfATriangle(this.pointA, point, this.pointD);
+    float areaOfDPC = areaOfATriangle(this.pointD, point, this.pointC);
+    float areaOfCPB = areaOfATriangle(this.pointC, point, this.pointB);
+    float areaOfPBA = areaOfATriangle(this.pointB, point, this.pointA);
+    float sumOfAreas = areaOfAPD + areaOfDPC + areaOfCPB + areaOfPBA;
+    return Math.abs(sumOfAreas - this.area) < epsilon;
+  }
+
+  void display(PGraphics layer) {
+    layer.push();
+    layer.noFill();
+    layer.stroke(0);
+    layer.strokeWeight(1);
+    layer.beginShape();
+    layer.vertex(this.pointA.x, this.pointA.y);
+    layer.vertex(this.pointB.x, this.pointB.y);
+    layer.vertex(this.pointC.x, this.pointC.y);
+    layer.vertex(this.pointD.x, this.pointD.y);
+    layer.endShape(CLOSE);
+    layer.pop();
+  }
+}
+
+class Arrow {
+  Vec2D start;
+  float arrowLength;
+  float arrowWidth;
+  float arrowHeading;
+  Rectangle rectangle;
+
+  Arrow(Vec2D start, float length, float heading) {
+    this.start = start;
+    this.arrowLength = length;
+    this.arrowWidth = this.arrowLength / 2;
+    this.arrowHeading = heading;
+    this.rectangle = new Rectangle(this.start, this.arrowLength * 1.2, this.arrowWidth * 1.2, this.arrowHeading);
+  }
+
+  void display(PGraphics layer) {
+    this.rectangle.display(layer);
+    layer.push();
+    layer.pushMatrix();
+    layer.translate(this.start.x, this.start.y);
+    layer.rotate(this.arrowHeading);
+    layer.strokeWeight(1);
+    layer.stroke(0);
+    layer.line(0, 0, this.arrowLength, 0);
+    layer.translate(this.arrowLength, 0);
+    layer.rotate(-HALF_PI / 2);
+    layer.line(0, 0, -this.arrowWidth / 2, 0);
+    layer.rotate(HALF_PI);
+    layer.line(0, 0, -this.arrowWidth / 2, 0);
+    layer.popMatrix();
+    layer.pop();
+  }
+
+  boolean isHover(float mX, float mY) {
+    return this.rectangle.isInside(new Vec2D(mX, mY), this.arrowWidth / 10);
+  }
+}
+
 class RibbonEndButtons {
   private Vec2D rightBank, leftBank, center, leftDirection;
   private Vec2D leftBankAnchorPoint, rightBankAnchorPoint;
   float radius = 12;
   float ribbonWid;
   Ribbon ribbon;
+  float arrowLength = 20;
+  float leftBankHeading, rightBankHeading;
+  boolean highlightLeftArrow = false,
+          highlightRightArrow = false,
+          highlightCenterArrow = false;
+  Arrow leftArrow, rightArrow;
 
   RibbonEndButtons (
     Vec2D center,
@@ -22,6 +117,12 @@ class RibbonEndButtons {
 
     this.leftBank = this.leftBankAnchorPoint.add(normalizedDir.scale(2));
     this.rightBank = this.rightBankAnchorPoint.sub(normalizedDir.scale(2));
+
+    this.leftBankHeading = this.leftBankAnchorPoint.sub(this.leftBank).heading() + PI;
+    this.rightBankHeading = this.rightBankAnchorPoint.sub(this.rightBank).heading() + PI;
+
+    this.leftArrow = new Arrow(this.leftBank, this.arrowLength, this.leftBankHeading);
+    this.rightArrow = new Arrow(this.rightBank, this.arrowLength, this.rightBankHeading);
   }
 
   Vec2D getCenter() {
@@ -50,39 +151,70 @@ class RibbonEndButtons {
 
   boolean isHoverLeftBank(float mX, float mY) {
     Vec2D left = this.getLeft();
-    return left != null && this.isHover(left, mX, mY, this.radius);
+    boolean isHoverLeftBank = left != null && this.leftArrow.isHover(mX, mY);
+    this.highlightLeftArrow = isHoverLeftBank;
+    if (isHoverLeftBank) {
+      println("hover left bank");
+    }
+    return isHoverLeftBank;
   }
   boolean isHoverRightBank(float mX, float mY) {
     Vec2D right = this.getRight();
-    return right != null && this.isHover(right, mX, mY, this.radius);
+    boolean isHoverRightBank = right != null && this.rightArrow.isHover(mX, mY);
+    this.highlightRightArrow = isHoverRightBank;
+    if (isHoverRightBank) {
+      println("hover right bank");
+    }
+    return isHoverRightBank;
   }
   boolean isHoverCenter(float mX, float mY) {
-    return this.isHover(this.center, mX, mY, this.radius);
+    return this.isHover(this.center, mX, mY, this.arrowLength);
+  }
+
+  void displayArrow(Vec2D position, float heading, PGraphics layer, boolean highlight) {
+    layer.push();
+
+    layer.noStroke();
+    layer.fill(255, 0, 0);
+    layer.beginShape();
+    Vec2D pointA = position.add(new Vec2D(0, this.arrowLength / 4).rotate(heading));
+    Vec2D pointB = position.add(new Vec2D(this.arrowLength, this.arrowLength / 4).rotate(heading));
+    Vec2D pointC = position.add(new Vec2D(this.arrowLength, -this.arrowLength / 4).rotate(heading));
+    Vec2D pointD = position.add(new Vec2D(0, -this.arrowLength / 4).rotate(heading));
+    layer.vertex(pointA.x, pointA.y);
+    layer.vertex(pointB.x, pointB.y);
+    layer.vertex(pointC.x, pointC.y);
+    layer.vertex(pointD.x, pointD.y);
+    layer.endShape(CLOSE);
+
+    layer.pushMatrix();
+    layer.translate(position.x, position.y);
+    layer.rotate(heading);
+      // layer.noStroke();
+      // layer.fill(255, 0, 0);
+      // layer.circle(this.arrowLength / 2, 0, this.arrowLength);
+    layer.strokeWeight(1);
+    layer.stroke(0);
+    layer.line(0, 0, this.arrowLength, 0);
+    layer.translate(this.arrowLength, 0);
+    layer.rotate(-HALF_PI / 2);
+    layer.line(0, 0, -this.arrowLength / 4, 0);
+    layer.rotate(HALF_PI);
+    layer.line(0, 0, -this.arrowLength / 4, 0);
+    layer.popMatrix();
+    layer.pop();
   }
 
   void display(PGraphics layer) {
     Vec2D left = this.getLeft();
     Vec2D right = this.getRight();
+    int lenFactor = 10;
 
-    if (right != null) {
-      layer.push();
-      layer.strokeWeight(1);
-      layer.stroke(0, 255, 0);
-      layer.circle(right.x, right.y, this.radius);
-      layer.line(right.x, right.y, this.rightBankAnchorPoint.x, this.rightBankAnchorPoint.y);
-      layer.fill(0, 255, 0);
-      layer.circle(this.rightBankAnchorPoint.x, this.rightBankAnchorPoint.y, this.radius / 2);
-      layer.pop();
-    }
     if (left != null) {
-      layer.push();
-      layer.strokeWeight(1);
-      layer.stroke(0, 0, 255);
-      layer.circle(left.x, left.y, this.radius);
-      layer.line(left.x, left.y, this.leftBankAnchorPoint.x, this.leftBankAnchorPoint.y);
-      layer.fill(0, 0, 255);
-      layer.circle(this.leftBankAnchorPoint.x, this.leftBankAnchorPoint.y, this.radius / 2);
-      layer.pop();
+      this.leftArrow.display(layer);
+    }
+    if (right != null) {
+      this.rightArrow.display(layer);
     }
     // if (this.center != null) {
     //   layer.push();
