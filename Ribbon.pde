@@ -1,60 +1,60 @@
-class Rectangle {
-  Vec2D pointA, pointB, pointC, pointD;
-  float area;
+// class Rectangle {
+//   Vec2D pointA, pointB, pointC, pointD;
+//   float area;
 
-  Rectangle(Vec2D arrowStart, float arrowLength, float arrowWidth, float arrowHeading) {
-    Vec2D pointA = arrowStart.add(new Vec2D(0, arrowWidth / 2).rotate(arrowHeading));
-    Vec2D pointB = arrowStart.add(new Vec2D(arrowLength, arrowWidth / 2).rotate(arrowHeading));
-    Vec2D pointC = arrowStart.add(new Vec2D(arrowLength, -arrowWidth / 2).rotate(arrowHeading));
-    Vec2D pointD = arrowStart.add(new Vec2D(0, -arrowWidth / 2).rotate(arrowHeading));
-    this.initialize(pointA, pointB, pointC, pointD);
-  }
+//   Rectangle(Vec2D arrowStart, float arrowLength, float arrowWidth, float arrowHeading) {
+//     Vec2D pointA = arrowStart.add(new Vec2D(0, arrowWidth / 2).rotate(arrowHeading));
+//     Vec2D pointB = arrowStart.add(new Vec2D(arrowLength, arrowWidth / 2).rotate(arrowHeading));
+//     Vec2D pointC = arrowStart.add(new Vec2D(arrowLength, -arrowWidth / 2).rotate(arrowHeading));
+//     Vec2D pointD = arrowStart.add(new Vec2D(0, -arrowWidth / 2).rotate(arrowHeading));
+//     this.initialize(pointA, pointB, pointC, pointD);
+//   }
 
-  private void initialize(Vec2D pointA, Vec2D pointB, Vec2D pointC, Vec2D pointD) {
-    this.pointA = pointA;
-    this.pointB = pointB;
-    this.pointC = pointC;
-    this.pointD = pointD;
-    this.area = areaOfATriangle(this.pointA, this.pointB, this.pointC) +
-                areaOfATriangle(this.pointA, this.pointC, this.pointD);
-  }
+//   private void initialize(Vec2D pointA, Vec2D pointB, Vec2D pointC, Vec2D pointD) {
+//     this.pointA = pointA;
+//     this.pointB = pointB;
+//     this.pointC = pointC;
+//     this.pointD = pointD;
+//     this.area = areaOfATriangle(this.pointA, this.pointB, this.pointC) +
+//                 areaOfATriangle(this.pointA, this.pointC, this.pointD);
+//   }
 
-  private float areaOfATriangle(Vec2D a, Vec2D b, Vec2D c) {
-    return abs((a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y)) / 2.0f);
-  }
+//   private float areaOfATriangle(Vec2D a, Vec2D b, Vec2D c) {
+//     return abs((a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y)) / 2.0f);
+//   }
 
-  boolean isInside(Vec2D point, float epsilon) {
-    // Calculate the sum of areas of △APD, △DPC, △CPB, △PBA.
-    // If the sum is equal to the area of the rectangle, then the point lies inside the rectangle.
-    float areaOfAPD = areaOfATriangle(this.pointA, point, this.pointD);
-    float areaOfDPC = areaOfATriangle(this.pointD, point, this.pointC);
-    float areaOfCPB = areaOfATriangle(this.pointC, point, this.pointB);
-    float areaOfPBA = areaOfATriangle(this.pointB, point, this.pointA);
-    float sumOfAreas = areaOfAPD + areaOfDPC + areaOfCPB + areaOfPBA;
-    return Math.abs(sumOfAreas - this.area) < epsilon;
-  }
+//   boolean isInside(Vec2D point, float epsilon) {
+//     // Calculate the sum of areas of △APD, △DPC, △CPB, △PBA.
+//     // If the sum is equal to the area of the rectangle, then the point lies inside the rectangle.
+//     float areaOfAPD = areaOfATriangle(this.pointA, point, this.pointD);
+//     float areaOfDPC = areaOfATriangle(this.pointD, point, this.pointC);
+//     float areaOfCPB = areaOfATriangle(this.pointC, point, this.pointB);
+//     float areaOfPBA = areaOfATriangle(this.pointB, point, this.pointA);
+//     float sumOfAreas = areaOfAPD + areaOfDPC + areaOfCPB + areaOfPBA;
+//     return Math.abs(sumOfAreas - this.area) < epsilon;
+//   }
 
-  void display(PGraphics layer) {
-    layer.push();
-    layer.noFill();
-    layer.stroke(0);
-    layer.strokeWeight(1);
-    layer.beginShape();
-    layer.vertex(this.pointA.x, this.pointA.y);
-    layer.vertex(this.pointB.x, this.pointB.y);
-    layer.vertex(this.pointC.x, this.pointC.y);
-    layer.vertex(this.pointD.x, this.pointD.y);
-    layer.endShape(CLOSE);
-    layer.pop();
-  }
-}
+//   void display(PGraphics layer) {
+//     layer.push();
+//     layer.noFill();
+//     layer.stroke(0);
+//     layer.strokeWeight(1);
+//     layer.beginShape();
+//     layer.vertex(this.pointA.x, this.pointA.y);
+//     layer.vertex(this.pointB.x, this.pointB.y);
+//     layer.vertex(this.pointC.x, this.pointC.y);
+//     layer.vertex(this.pointD.x, this.pointD.y);
+//     layer.endShape(CLOSE);
+//     layer.pop();
+//   }
+// }
 
 class Arrow {
   Vec2D start, midPoint;
   float arrowLength;
   float arrowWidth;
   float arrowHeading;
-  Rectangle rectangle;
+  // Rectangle rectangle;
   boolean highlight = false;
 
   Arrow(Vec2D start, float length, float heading) {
@@ -63,11 +63,11 @@ class Arrow {
     this.arrowWidth = this.arrowLength / 2;
     this.arrowHeading = heading;
     this.midPoint = this.start.add(new Vec2D(this.arrowLength / 2, 0).rotate(this.arrowHeading));
-    this.rectangle = new Rectangle(this.start, this.arrowLength * 1.2, this.arrowWidth * 1.2, this.arrowHeading);
+    // this.rectangle = new Rectangle(this.start, this.arrowLength * 1.2, this.arrowWidth * 1.2, this.arrowHeading);
   }
 
   void display(PGraphics layer) {
-    this.rectangle.display(layer);
+    // this.rectangle.display(layer);
     layer.push();
     // Highlight with a red circle
     if (this.highlight) {
@@ -92,8 +92,11 @@ class Arrow {
 
   boolean isHover(float mX, float mY) {
     // distance to midpoint < arrowLength / 2
-    this.highlight = this.midPoint.distanceTo(new Vec2D(mX, mY)) < this.arrowLength / 2;
-    return this.highlight;
+    return this.midPoint.distanceTo(new Vec2D(mX, mY)) < this.arrowLength / 2;
+  }
+
+  void setHighlighted(boolean highlighted) {
+    this.highlight = highlighted;
   }
 }
 
@@ -106,11 +109,6 @@ class RibbonEndButtons {
   float arrowLength = 20;
   float leftBankHeading, rightBankHeading;
   Arrow leftArrow, rightArrow;
-
-  void setHighlighted(boolean highlighted) {
-    this.leftArrow.highlight = highlighted;
-    this.rightArrow.highlight = highlighted;
-  }
 
   RibbonEndButtons (
     Vec2D center,
@@ -155,6 +153,19 @@ class RibbonEndButtons {
       this.rightBankAnchorPoint = null;
     }
     return this.rightBank;
+  }
+
+  void setLeftHighlight(boolean highlight) {
+    this.leftArrow.setHighlighted(highlight);
+  }
+
+  void setRightHighlight(boolean highlight) {
+    this.rightArrow.setHighlighted(highlight);
+  }
+
+  void removeHighlights() {
+    this.leftArrow.setHighlighted(false);
+    this.rightArrow.setHighlighted(false);
   }
 
   private boolean isHover(Vec2D position, float mX, float mY, float radius) {
@@ -228,6 +239,14 @@ class RibbonEndButtons {
   }
 }
 
+class RibbonButtons {
+  Ribbon ribbon = null;
+  RibbonButtons(Ribbon ribbon) {
+    this.ribbon = ribbon;
+
+  }
+}
+
 class Ribbon {
   Vec2D[] curve = new Vec2D[0];
   Vec2D[] normals = new Vec2D[0];
@@ -235,6 +254,8 @@ class Ribbon {
 
   RibbonEndButtons frontButtons = null,
                   backButtons = null;
+
+  ArrayList<RibbonEndButtons> allButtons = new ArrayList<RibbonEndButtons>();
 
   Ribbon leftRibbon = null,
         rightRibbon = null;
@@ -256,15 +277,6 @@ class Ribbon {
       this.computeCurveNormals();
     }
     this.computeEndButtons();
-  }
-
-  void removeAllHighlights() {
-    if (this.frontButtons != null) {
-      this.frontButtons.setHighlighted(false);
-    }
-    if (this.backButtons != null) {
-      this.backButtons.setHighlighted(false);
-    }
   }
 
   boolean hasRightBank() {
@@ -527,31 +539,25 @@ class Ribbon {
 
   void computeEndButtons() {
     if (this.curve.length <= 1) { return; }
-    int len = this.curve.length;
-    Vec2D firstPoint = this.curve[0];
-    Vec2D secondPoint = this.curve[1];
-    Vec2D beforeLastPoint = this.curve[len - 2];
-    Vec2D lastPoint = this.curve[len - 1];
-
-    this.frontButtons = new RibbonEndButtons(
-      firstPoint,
-      ribbonWid,
-      firstPoint.sub(secondPoint).getRotated(HALF_PI).getNormalized(),
-      this
-    );
-    this.backButtons = new RibbonEndButtons(
-      lastPoint,
-      ribbonWid,
-      lastPoint.sub(beforeLastPoint).getRotated(-HALF_PI).getNormalized(),
-      this
-    );
+    // for each point on the curve, assign a pair of buttons and add them to the list
+    for (int i = 0; i < this.curve.length; i++) {
+      Vec2D point = this.curve[i];
+      Vec2D normal = this.normals[i];
+      RibbonEndButtons buttons = new RibbonEndButtons(point, this.ribbonWid, normal, this);
+      this.allButtons.add(buttons);
+    }
+    this.frontButtons = this.allButtons.get(0);
+    this.backButtons = this.allButtons.get(this.allButtons.size() - 1);
   }
 
   void displayEndButtons(PGraphics layer) {
-    if (this.frontButtons != null && this.backButtons != null) {
-      this.frontButtons.display(layer);
-      this.backButtons.display(layer);
+    for (RibbonEndButtons buttons : this.allButtons) {
+      buttons.display(layer);
     }
+    // if (this.frontButtons != null && this.backButtons != null) {
+    //   this.frontButtons.display(layer);
+    //   this.backButtons.display(layer);
+    // }
   }
 
   Ribbon createAndAssignLeftRibbon(float linearDensity, Vec2D[] variationCurve) {
@@ -559,6 +565,7 @@ class Ribbon {
     if (newRibbon != null) {
       this.assignLeftRibbon(newRibbon);
       newRibbon.assignRightRibbon(this);
+      // TODO: Remove left buttons
     }
     return newRibbon;
   }
@@ -568,28 +575,40 @@ class Ribbon {
     if (newRibbon != null) {
       this.assignRightRibbon(newRibbon);
       newRibbon.assignLeftRibbon(this);
+      // TODO: Remove right buttons
     }
     return newRibbon;
   }
 
-  Ribbon extend(Vec2D mousePos, Vec2D[] variationCurve, float linearDensity) {
-    boolean hasFrontButtons = this.frontButtons != null;
-    boolean hasBackButtons = this.backButtons != null;
-    boolean isOverLeft =
-      hasFrontButtons && this.frontButtons.isHoverLeftBank(mousePos.x, mousePos.y) ||
-      hasBackButtons && this.backButtons.isHoverLeftBank(mousePos.x, mousePos.y);
-    boolean isOverRight =
-      hasFrontButtons && this.frontButtons.isHoverRightBank(mousePos.x, mousePos.y) ||
-      hasBackButtons && this.backButtons.isHoverRightBank(mousePos.x, mousePos.y);
+  boolean isOverLeft(Vec2D mousePos) {
+    boolean isOver = false;
+    for (RibbonEndButtons buttons : this.allButtons) {
+      if (buttons.isHoverLeftBank(mousePos.x, mousePos.y)) {
+        // Don't return here because we want to check all buttons to reset the state of the highlight (isHoverLeftBank is not a pure function)
+        isOver = true;
+      }
+    }
+    return isOver;
+  }
 
-    if (isOverLeft) {
+  boolean isOverRight(Vec2D mousePos) {
+    boolean isOver = false;
+    for (RibbonEndButtons buttons : this.allButtons) {
+      if (buttons.isHoverRightBank(mousePos.x, mousePos.y)) {
+        // Don't return here because we want to check all buttons to reset the state of the highlight (isHoverRightBank is not a pure function)
+        isOver = true;
+      }
+    }
+    return isOver;
+  }
+
+  Ribbon extend(Vec2D mousePos, Vec2D[] variationCurve, float linearDensity) {
+    if (this.isOverLeft(mousePos)) {
       return this.createAndAssignLeftRibbon(linearDensity, variationCurve);
     }
-
-    if (isOverRight) {
+    if (this.isOverRight(mousePos)) {
       return this.createAndAssignRightRibbon(linearDensity, variationCurve);
     }
-
     return null;
   }
 }
@@ -615,18 +634,35 @@ class RibbonMemory {
   }
 
   private void addRibbonButtons(Ribbon ribbon) {
-    this.allButtons.add(ribbon.frontButtons);
-    this.allButtons.add(ribbon.backButtons);
+    for (RibbonEndButtons button : ribbon.allButtons) {
+      this.allButtons.add(button);
+    }
   }
 
   private void removeRibbonButtons(Ribbon ribbon) {
-    this.allButtons.remove(ribbon.frontButtons);
-    this.allButtons.remove(ribbon.backButtons);
+    for (RibbonEndButtons button : ribbon.allButtons) {
+      this.allButtons.remove(button);
+    }
+  }
+
+  void resetButtonHightlights() {
+    for (RibbonEndButtons button : this.allButtons) {
+      button.removeHighlights();
+    }
   }
 
   Ribbon isOverButton(Vec2D mousePos) {
+    this.resetButtonHightlights();
     for (RibbonEndButtons button : this.allButtons) {
-      if (button.isHoverLeftBank(mousePos.x, mousePos.y) || button.isHoverRightBank(mousePos.x, mousePos.y)) {
+      boolean isOverLeft = button.isHoverLeftBank(mousePos.x, mousePos.y);
+      boolean isOverRight = button.isHoverRightBank(mousePos.x, mousePos.y);
+      if (isOverLeft) {
+        button.setLeftHighlight(true);
+      }
+      if (isOverRight) {
+        button.setRightHighlight(true);
+      }
+      if (isOverLeft || isOverRight) {
         return button.ribbon;
       }
     }

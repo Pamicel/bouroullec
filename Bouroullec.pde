@@ -274,23 +274,23 @@ class DisplayWindow extends PApplet {
     return new Vec2D(this.pos.x * this.ribbonsLayer.width, this.pos.y * this.ribbonsLayer.height);
   }
 
-  boolean isOverButton() {
+  Vec2D getMousePos() {
     Vec2D currentTranslation = this.getCurrentTranslation();
-    Vec2D mousePos = new Vec2D(mouseX + currentTranslation.x, mouseY + currentTranslation.y).scale(this.scale);
-    return this.ribbonMemory.isOverButton(mousePos) != null;
+    return new Vec2D(mouseX + currentTranslation.x, mouseY + currentTranslation.y).scale(this.scale);
   }
 
-  void extend() {
-    Vec2D currentTranslation = this.getCurrentTranslation();
-    Vec2D mousePos = new Vec2D(mouseX + currentTranslation.x, mouseY + currentTranslation.y).scale(this.scale);
-    Ribbon current = ribbonMemory.isOverButton(mousePos);
-    if (current == null) {
-      return;
-    }
+  Ribbon isOverButton() {
+    return this.isOverButton(this.getMousePos());
+  }
 
+  Ribbon isOverButton(Vec2D position) {
+    return this.ribbonMemory.isOverButton(position);
+  }
+
+  void extend(Ribbon current) {
     Vec2D[] variationCurve = toolWindow.getYNormalizedCurve();
     float linearDensity = this.LINEAR_DENSITY;
-    Ribbon newRibbon = current.extend(mousePos, variationCurve, linearDensity);
+    Ribbon newRibbon = current.extend(this.getMousePos(), variationCurve, linearDensity);
     if (newRibbon != null) {
       addNewRibbon(newRibbon);
       printNewRibbon(newRibbon);
@@ -303,9 +303,8 @@ class DisplayWindow extends PApplet {
 
   void mouseDragged() {
     if (this.mode.current() == Mode.EXTEND) {
-      if (this.isOverButton()) {
-        this.extend();
-      }
+      Ribbon currentRibbon = this.isOverButton();
+      if (currentRibbon != null) this.extend(currentRibbon);
     } else if (this.mode.current() != Mode.EXTEND) {
       curve.add(new Vec2D(mouseX, mouseY));
     }
@@ -313,7 +312,7 @@ class DisplayWindow extends PApplet {
 
   void mouseMoved() {
     if (this.mode.current() == Mode.EXTEND) {
-      if (this.isOverButton()) {
+      if (this.isOverButton() != null) {
         cursor(HAND);
       } else {
         cursor(ARROW);
@@ -350,24 +349,20 @@ class DisplayWindow extends PApplet {
     Ribbon newRibbon;
 
     boolean drewCurve = curve.size() > 1;
-    boolean emptyResample = false;
     if (drewCurve) {
       resampledCurve = densityResample(curve, this.LINEAR_DENSITY);
       resampledCurve = translateCurve(resampledCurve, this.getCurrentTranslation());
       resampledCurve = rescaleCurve(resampledCurve, this.scale);
-      emptyResample = resampledCurve.length <= 1;
+      if (resampledCurve.length > 1) {
+        newRibbon = new Ribbon(resampledCurve);
+        newRibbon.col = colors[lastRibbonColorIndex];
+        lastRibbonColorIndex = (lastRibbonColorIndex + 1) % colors.length;
+        addNewRibbon(newRibbon);
+        printNewRibbon(newRibbon);
+        this.printRibbonButtons();
+      }
     }
 
-    if (!drewCurve || emptyResample) {
-      this.extend();
-    } else if (!emptyResample) {
-      newRibbon = new Ribbon(resampledCurve);
-      newRibbon.col = colors[lastRibbonColorIndex];
-      lastRibbonColorIndex = (lastRibbonColorIndex + 1) % colors.length;
-      addNewRibbon(newRibbon);
-      printNewRibbon(newRibbon);
-      this.printRibbonButtons();
-    }
   }
 
   void keyPressed() {
