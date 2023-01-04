@@ -50,23 +50,31 @@ class Rectangle {
 }
 
 class Arrow {
-  Vec2D start;
+  Vec2D start, midPoint;
   float arrowLength;
   float arrowWidth;
   float arrowHeading;
   Rectangle rectangle;
+  boolean highlight = false;
 
   Arrow(Vec2D start, float length, float heading) {
     this.start = start;
     this.arrowLength = length;
     this.arrowWidth = this.arrowLength / 2;
     this.arrowHeading = heading;
+    this.midPoint = this.start.add(new Vec2D(this.arrowLength / 2, 0).rotate(this.arrowHeading));
     this.rectangle = new Rectangle(this.start, this.arrowLength * 1.2, this.arrowWidth * 1.2, this.arrowHeading);
   }
 
   void display(PGraphics layer) {
     this.rectangle.display(layer);
     layer.push();
+    // Highlight with a red circle
+    if (this.highlight) {
+      layer.fill(255, 0, 0);
+      layer.noStroke();
+      layer.circle(this.midPoint.x, this.midPoint.y, this.arrowLength);
+    }
     layer.pushMatrix();
     layer.translate(this.start.x, this.start.y);
     layer.rotate(this.arrowHeading);
@@ -83,7 +91,9 @@ class Arrow {
   }
 
   boolean isHover(float mX, float mY) {
-    return this.rectangle.isInside(new Vec2D(mX, mY), this.arrowWidth / 10);
+    // distance to midpoint < arrowLength / 2
+    this.highlight = this.midPoint.distanceTo(new Vec2D(mX, mY)) < this.arrowLength / 2;
+    return this.highlight;
   }
 }
 
@@ -95,10 +105,12 @@ class RibbonEndButtons {
   Ribbon ribbon;
   float arrowLength = 20;
   float leftBankHeading, rightBankHeading;
-  boolean highlightLeftArrow = false,
-          highlightRightArrow = false,
-          highlightCenterArrow = false;
   Arrow leftArrow, rightArrow;
+
+  void setHighlighted(boolean highlighted) {
+    this.leftArrow.highlight = highlighted;
+    this.rightArrow.highlight = highlighted;
+  }
 
   RibbonEndButtons (
     Vec2D center,
@@ -151,21 +163,11 @@ class RibbonEndButtons {
 
   boolean isHoverLeftBank(float mX, float mY) {
     Vec2D left = this.getLeft();
-    boolean isHoverLeftBank = left != null && this.leftArrow.isHover(mX, mY);
-    this.highlightLeftArrow = isHoverLeftBank;
-    if (isHoverLeftBank) {
-      println("hover left bank");
-    }
-    return isHoverLeftBank;
+    return left != null && this.leftArrow.isHover(mX, mY);
   }
   boolean isHoverRightBank(float mX, float mY) {
     Vec2D right = this.getRight();
-    boolean isHoverRightBank = right != null && this.rightArrow.isHover(mX, mY);
-    this.highlightRightArrow = isHoverRightBank;
-    if (isHoverRightBank) {
-      println("hover right bank");
-    }
-    return isHoverRightBank;
+    return right != null && this.rightArrow.isHover(mX, mY);
   }
   boolean isHoverCenter(float mX, float mY) {
     return this.isHover(this.center, mX, mY, this.arrowLength);
@@ -256,24 +258,13 @@ class Ribbon {
     this.computeEndButtons();
   }
 
-  boolean isOverButton(float mX, float mY) {
-    boolean isOverBack = (
-      this.backButtons != null &&
-      (
-        this.backButtons.isHoverLeftBank(mX, mY) ||
-        this.backButtons.isHoverRightBank(mX, mY) ||
-        this.backButtons.isHoverCenter(mX, mY)
-      )
-    );
-    boolean isOverFront = (
-      this.frontButtons != null &&
-      (
-        this.frontButtons.isHoverLeftBank(mX, mY) ||
-        this.frontButtons.isHoverRightBank(mX, mY) ||
-        this.frontButtons.isHoverCenter(mX, mY)
-      )
-    );
-    return isOverBack || isOverFront;
+  void removeAllHighlights() {
+    if (this.frontButtons != null) {
+      this.frontButtons.setHighlighted(false);
+    }
+    if (this.backButtons != null) {
+      this.backButtons.setHighlighted(false);
+    }
   }
 
   boolean hasRightBank() {
@@ -562,89 +553,84 @@ class Ribbon {
       this.backButtons.display(layer);
     }
   }
+
+  Ribbon createAndAssignLeftRibbon(float linearDensity, Vec2D[] variationCurve) {
+    Ribbon newRibbon = this.createLeftRibbon(linearDensity, variationCurve);
+    if (newRibbon != null) {
+      this.assignLeftRibbon(newRibbon);
+      newRibbon.assignRightRibbon(this);
+    }
+    return newRibbon;
+  }
+
+  Ribbon createAndAssignRightRibbon(float linearDensity, Vec2D[] variationCurve) {
+    Ribbon newRibbon = this.createRightRibbon(linearDensity, variationCurve);
+    if (newRibbon != null) {
+      this.assignRightRibbon(newRibbon);
+      newRibbon.assignLeftRibbon(this);
+    }
+    return newRibbon;
+  }
+
+  Ribbon extend(Vec2D mousePos, Vec2D[] variationCurve, float linearDensity) {
+    boolean hasFrontButtons = this.frontButtons != null;
+    boolean hasBackButtons = this.backButtons != null;
+    boolean isOverLeft =
+      hasFrontButtons && this.frontButtons.isHoverLeftBank(mousePos.x, mousePos.y) ||
+      hasBackButtons && this.backButtons.isHoverLeftBank(mousePos.x, mousePos.y);
+    boolean isOverRight =
+      hasFrontButtons && this.frontButtons.isHoverRightBank(mousePos.x, mousePos.y) ||
+      hasBackButtons && this.backButtons.isHoverRightBank(mousePos.x, mousePos.y);
+
+    if (isOverLeft) {
+      return this.createAndAssignLeftRibbon(linearDensity, variationCurve);
+    }
+
+    if (isOverRight) {
+      return this.createAndAssignRightRibbon(linearDensity, variationCurve);
+    }
+
+    return null;
+  }
 }
 
-class RibbonEndPositions {
-  int nw = 20, nh = 20;
-  ArrayList<Ribbon>[] ribbons;
+class RibbonMemory {
   HashSet<Ribbon> allRibbons = new HashSet<Ribbon>();
-  int areaW, areaH;
+  ArrayList<RibbonEndButtons> allButtons = new ArrayList<RibbonEndButtons>();
 
-  RibbonEndPositions(int areaW, int areaH) {
-    this.areaW = areaW;
-    this.areaH = areaH;
-    this.ribbons = new ArrayList[this.nw * this.nh];
-    for (int i = 0; i < this.ribbons.length; i++) {
-      this.ribbons[i] = null;
-    }
-  }
+  RibbonMemory() {}
 
-  private int positionIndex (Vec2D position) {
-    if (position == null) {
-      return -1;
-    }
-    float normXpos = position.x / this.areaW;
-    int xindex = floor(normXpos * this.nw);
-    float normYpos = position.y / this.areaH;
-    int yindex = floor(normYpos * this.nh);
-    return xindex + this.nw * yindex;
-  }
-
-  private void placeRibbonAt(int index, Ribbon ribbon) {
-    if (index < 0) return;
-    if (index >= nw * nh) return;
-    if (this.ribbons[index] == null) {
-      this.ribbons[index] = new ArrayList<Ribbon>();
-    }
-    this.ribbons[index].add(ribbon);
+  void addRibbon(Ribbon ribbon) {
     this.allRibbons.add(ribbon);
+    this.addRibbonButtons(ribbon);
   }
 
-  ArrayList<Ribbon> getRibbonsAt(float mX, float mY) {
-    int index = this.positionIndex(new Vec2D(mX, mY));
-    if (index < 0) return null;
-    if (index >= this.ribbons.length) return null;
-    if (this.ribbons[index] != null) {
-      return this.ribbons[index];
-    }
-    return null;
+  void removeRibbon(Ribbon ribbon) {
+    this.allRibbons.remove(ribbon);
+    this.removeRibbonButtons(ribbon);
   }
 
   Ribbon[] getAllRibbons() {
     return this.allRibbons.toArray(new Ribbon[this.allRibbons.size()]);
   }
 
-  void removeRibbon(Ribbon ribbon) {
-    HashSet<Integer> indices = new HashSet<Integer>();
-    indices.add(this.positionIndex(ribbon.frontButtons.getLeft()));
-    indices.add(this.positionIndex(ribbon.frontButtons.getRight()));
-    indices.add(this.positionIndex(ribbon.backButtons.getLeft()));
-    indices.add(this.positionIndex(ribbon.backButtons.getRight()));
-    Iterator<Integer> it = indices.iterator();
-    while(it.hasNext()) {
-      this.removeRibbonAt(it.next(), ribbon);
-    }
-
+  private void addRibbonButtons(Ribbon ribbon) {
+    this.allButtons.add(ribbon.frontButtons);
+    this.allButtons.add(ribbon.backButtons);
   }
 
-  private void removeRibbonAt(int index, Ribbon ribbon) {
-    if (index >= 0 && index < this.ribbons.length) {
-      this.ribbons[index].remove(Collections.singleton(ribbon));
-      this.allRibbons.remove(ribbon);
-    }
+  private void removeRibbonButtons(Ribbon ribbon) {
+    this.allButtons.remove(ribbon.frontButtons);
+    this.allButtons.remove(ribbon.backButtons);
   }
 
-  void addRibbon(Ribbon ribbon) {
-    HashSet<Integer> indices = new HashSet<Integer>();
-    indices.add(this.positionIndex(ribbon.frontButtons.getLeft()));
-    indices.add(this.positionIndex(ribbon.frontButtons.getRight()));
-    indices.add(this.positionIndex(ribbon.backButtons.getLeft()));
-    indices.add(this.positionIndex(ribbon.backButtons.getRight()));
-
-    Iterator<Integer> it = indices.iterator();
-    while(it.hasNext()) {
-      this.placeRibbonAt(it.next(), ribbon);
+  Ribbon isOverButton(Vec2D mousePos) {
+    for (RibbonEndButtons button : this.allButtons) {
+      if (button.isHoverLeftBank(mousePos.x, mousePos.y) || button.isHoverRightBank(mousePos.x, mousePos.y)) {
+        return button.ribbon;
+      }
     }
+    return null;
   }
 
   void addRibbons(ArrayList<Ribbon> ribbons) {

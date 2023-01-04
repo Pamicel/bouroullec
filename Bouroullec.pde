@@ -5,7 +5,7 @@ import processing.svg.*;
 
 ToolWindow toolWindow;
 DisplayWindow displayWindow;
-PrintWindow printWindow;
+// PrintWindow printWindow;
 boolean SECONDARY_MONITOR = false;
 int[] CANVAS_SIZE = new int[]{2100 / 3, 2970 / 3};
 int[] DISPLAY_WIN_SIZE = new int[]{2100 / 3, 2970 / 3};
@@ -40,93 +40,64 @@ color[] colors = new color[] {
 };
 int lastRibbonColorIndex = 0;
 
+enum Mode {
+  DRAW, EXTEND
+}
+
+class CurrentMode {
+  private Mode currentMode;
+
+  CurrentMode () {
+    this.reset();
+  }
+
+  void change() {
+    if (this.currentMode == Mode.DRAW) {
+      this.currentMode = Mode.EXTEND;
+    } else {
+      this.currentMode = Mode.DRAW;
+    }
+  }
+
+  void reset() {
+    this.currentMode = Mode.DRAW;
+  }
+
+  Mode current() {
+    return this.currentMode;
+  }
+}
+
+enum ControlKeys {
+  COLOR('c'),
+  PRINT_PNG('p'),
+  PRINT_SVG('s'),
+  ERASE('e');
+
+  private char key;
+
+  ControlKeys(char key) {
+    this.key = key;
+  }
+
+  public char getKey() {
+    return key;
+  }
+}
+
 void setup() {
   // create the other windows
   pixelDensity(2);
   toolWindow = new ToolWindow();
   displayWindow = new DisplayWindow(this.sketchPath(""));
   // printWindow = new PrintWindow();
-  // give other windows the correct folder location
+  // // give other windows the correct folder location
   // displayWindow.printWindow = printWindow;
   // printWindow.displayWindow = displayWindow;
   this.surface.setVisible(false);
 }
 
 void draw() {noLoop();}
-
-class PrintWindow extends PApplet {
-  public String path = "";
-  public PImage image = null;
-  boolean showPosition = true;
-  DisplayWindow displayWindow = null;
-  private float currentResRatio = 1.0;
-  boolean initialized = false;
-
-  PrintWindow() {
-    super();
-    PApplet.runSketch(new String[]{this.getClass().getName()}, this);
-  }
-
-  void settings() {
-    size(600, 600);
-  }
-
-  void setup() {
-    this.surface.setLocation(PRINT_WIN_XY[0], PRINT_WIN_XY[1]);
-    this.surface.setResizable(true);
-  }
-
-  public void setImage(PImage img) {
-    this.image = img;
-    float resRatio = (float)this.image.width / this.image.height;
-    if (this.currentResRatio != resRatio) {
-      this.currentResRatio = resRatio;
-      if (resRatio > 1) {
-        this.surface.setSize(this.width, round(this.height / resRatio));
-      } else {
-        this.surface.setSize(round(this.width * resRatio), this.height);
-      }
-    }
-    this.initialized = true;
-    this.loop();
-  }
-
-  void draw() {
-    if (!initialized) {
-      push();
-      textSize(30);
-      textAlign(CENTER, CENTER);
-      fill(0);
-      text("Press P in display window", width / 2, height / 2);
-      pop();
-    }
-    if (image != null) {
-      this.image(this.image, 0, 0, this.width, this.height);
-    }
-    if (showPosition && this.displayWindow != null) {
-      fill(0, 0, 0, 20);
-      noStroke();
-      rect(
-        this.displayWindow.pos.x * this.width,
-        this.displayWindow.pos.y * this.height,
-        this.width * this.displayWindow.xRatio,
-        this.height * this.displayWindow.yRatio
-      );
-    }
-    this.noLoop();
-  }
-
-  void mouseMoved() {
-    loop();
-  }
-
-  void keyPressed() {
-    if (key == ' ') {
-      this.showPosition = !this.showPosition;
-    }
-  }
-}
-
 
 class DisplayWindow extends PApplet {
   DisplayWindow(String path) {
@@ -140,15 +111,15 @@ class DisplayWindow extends PApplet {
   float yRatio = 1.0;
   int[] canvasSize = null;
   private float scale = 1.0;
+  CurrentMode mode = new CurrentMode();
 
-  PrintWindow printWindow = null;
+  // PrintWindow printWindow = null;
   private String path = "";
   ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
   Vec2D[] resampledCurve = null;
-  RibbonEndPositions ribbonEndPositions;
+  RibbonMemory ribbonMemory;
   PGraphics ribbonsLayer, buttonsLayer, interactiveLayer;
   final float LINEAR_DENSITY = DISPLAY_WINDOW_LINEAR_DENSITY;
-  ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>();
 
   // Processing methods
 
@@ -168,25 +139,25 @@ class DisplayWindow extends PApplet {
     this.xRatio = (float)this.width / this.ribbonsLayer.width;
     this.yRatio = (float)this.height / this.ribbonsLayer.height;
     this.scale = 1.0 / xRatio;
-    this.ribbonEndPositions = new RibbonEndPositions(ribbonsLayer.width, ribbonsLayer.height);
+    this.ribbonMemory = new RibbonMemory();
     this.buttonsLayer = createGraphics(ribbonsLayer.width, ribbonsLayer.height);
   }
 
-  void printComposition () {
-    if (this.printWindow != null) {
-      this.printWindow.setImage(this.ribbonsLayer.get());
-    }
-  }
+  // void printComposition () {
+  //   if (this.printWindow != null) {
+  //     this.printWindow.setImage(this.ribbonsLayer.get());
+  //   }
+  // }
 
   void clearCanvas () {
-    this.ribbons = new ArrayList<Ribbon>();
     this.ribbonsLayer.beginDraw();
     this.ribbonsLayer.clear();
     this.ribbonsLayer.endDraw();
     this.buttonsLayer.beginDraw();
     this.buttonsLayer.clear();
     this.buttonsLayer.endDraw();
-    this.ribbonEndPositions = new RibbonEndPositions(this.ribbonsLayer.width, this.ribbonsLayer.height);
+    this.ribbonMemory = new RibbonMemory();
+    this.mode.reset();
   }
 
   float signedAngle(Vec2D pos) {
@@ -223,7 +194,16 @@ class DisplayWindow extends PApplet {
     //   - this.pos.y * this.buttonsLayer.height
     // );
     image(this.ribbonsLayer, 0, 0, width, height);
-    image(this.buttonsLayer, 0, 0, width, height);
+    if (this.mode.current() == Mode.EXTEND) {
+      this.printRibbonButtons();
+      image(this.buttonsLayer, 0, 0, width, height);
+    }
+
+    Vec2D currentTranslation = this.getCurrentTranslation();
+    Vec2D mousePos = new Vec2D(mouseX + currentTranslation.x, mouseY + currentTranslation.y).scale(this.scale);
+    // Draw red circle around mouse
+    stroke(255, 0, 0);
+    circle(mousePos.x, mousePos.y, 5);
   }
 
   // Sketch methods
@@ -258,7 +238,7 @@ class DisplayWindow extends PApplet {
     int date = (year() % 100) * 10000 + month() * 100 + day();
     int time = hour() * 10000 + minute() * 100 + second();
     PGraphics svg = createGraphics(this.ribbonsLayer.width, this.ribbonsLayer.height, SVG, this.path + "out/date-"+ date + "_time-"+ time + ".svg");
-    Ribbon[] allRibbons = this.ribbonEndPositions.getAllRibbons();
+    Ribbon[] allRibbons = this.ribbonMemory.getAllRibbons();
     svg.beginDraw();
     for (int i = 0; i < allRibbons.length; i++) {
       allRibbons[i].displayCurveSmooth(svg);
@@ -275,7 +255,7 @@ class DisplayWindow extends PApplet {
   }
 
   void printRibbonButtons() {
-    Ribbon[] allRibbons = ribbonEndPositions.getAllRibbons();
+    Ribbon[] allRibbons = ribbonMemory.getAllRibbons();
     Ribbon currentRibbon;
     buttonsLayer.beginDraw();
     buttonsLayer.clear();
@@ -287,8 +267,7 @@ class DisplayWindow extends PApplet {
   }
 
   void addNewRibbon(Ribbon newRibbon) {
-    ribbons.add(newRibbon);
-    ribbonEndPositions.addRibbon(newRibbon);
+    ribbonMemory.addRibbon(newRibbon);
   }
 
   Vec2D getCurrentTranslation() {
@@ -298,54 +277,23 @@ class DisplayWindow extends PApplet {
   boolean isOverButton() {
     Vec2D currentTranslation = this.getCurrentTranslation();
     Vec2D mousePos = new Vec2D(mouseX + currentTranslation.x, mouseY + currentTranslation.y).scale(this.scale);
-    ArrayList<Ribbon> ribbonsHere = ribbonEndPositions.getRibbonsAt(mousePos.x, mousePos.y);
-    int nRibbonsHere = ribbonsHere != null ? ribbonsHere.size() : 0;
-    Ribbon current;
-    for (int i = 0; i < nRibbonsHere; i++) {
-      current = ribbonsHere.get(i);
-      if (current.isOverButton(mousePos.x, mousePos.y)) {
-        return true;
-      }
-    }
-
-    return false;
+    return this.ribbonMemory.isOverButton(mousePos) != null;
   }
 
   void extend() {
     Vec2D currentTranslation = this.getCurrentTranslation();
-    Vec2D mousePos = new Vec2D(mouseX, mouseY).scale(this.scale);
-    ArrayList<Ribbon> ribbonsHere = ribbonEndPositions.getRibbonsAt(mousePos.x, mousePos.y);
+    Vec2D mousePos = new Vec2D(mouseX + currentTranslation.x, mouseY + currentTranslation.y).scale(this.scale);
+    Ribbon current = ribbonMemory.isOverButton(mousePos);
+    if (current == null) {
+      return;
+    }
+
     Vec2D[] variationCurve = toolWindow.getYNormalizedCurve();
-    Ribbon current, newRibbon;
-    int nRibbonsHere = ribbonsHere != null ? ribbonsHere.size() : 0;
-    for (int i = 0; i < nRibbonsHere; i++) {
-      current = ribbonsHere.get(i);
-      if (current.frontButtons.isHoverLeftBank(mousePos.x, mousePos.y) || current.backButtons.isHoverLeftBank(mousePos.x, mousePos.y)) {
-        newRibbon = current.createLeftRibbon(this.LINEAR_DENSITY, variationCurve);
-        if (newRibbon != null) {
-          current.assignLeftRibbon(newRibbon);
-          newRibbon.assignRightRibbon(current);
-          if (current.hasRightBank()) {
-            ribbonEndPositions.removeRibbon(current);
-          }
-          addNewRibbon(newRibbon);
-          printNewRibbon(newRibbon);
-          this.printRibbonButtons();
-        }
-      }
-      if (current.frontButtons.isHoverRightBank(mousePos.x, mousePos.y) || current.backButtons.isHoverRightBank(mousePos.x, mousePos.y)) {
-        newRibbon = current.createRightRibbon(this.LINEAR_DENSITY, variationCurve);
-        if (newRibbon != null) {
-          current.assignRightRibbon(newRibbon);
-          newRibbon.assignLeftRibbon(current);
-          if (current.hasLeftBank()) {
-            ribbonEndPositions.removeRibbon(current);
-          }
-          addNewRibbon(newRibbon);
-          printNewRibbon(newRibbon);
-          this.printRibbonButtons();
-        }
-      };
+    float linearDensity = this.LINEAR_DENSITY;
+    Ribbon newRibbon = current.extend(mousePos, variationCurve, linearDensity);
+    if (newRibbon != null) {
+      addNewRibbon(newRibbon);
+      printNewRibbon(newRibbon);
     }
   }
 
@@ -354,17 +302,30 @@ class DisplayWindow extends PApplet {
   boolean extending = false;
 
   void mouseDragged() {
-    if (extending) {
-      this.extend();
-    } else {
+    if (this.mode.current() == Mode.EXTEND) {
+      if (this.isOverButton()) {
+        this.extend();
+      }
+    } else if (this.mode.current() != Mode.EXTEND) {
       curve.add(new Vec2D(mouseX, mouseY));
+    }
+  }
+
+  void mouseMoved() {
+    if (this.mode.current() == Mode.EXTEND) {
+      if (this.isOverButton()) {
+        cursor(HAND);
+      } else {
+        cursor(ARROW);
+      }
     }
   }
 
   void mousePressed() {
     curve = new ArrayList<Vec2D>();
-    extending = this.isOverButton();
-    curve.add(new Vec2D(mouseX, mouseY));
+    if (this.mode.current() != Mode.EXTEND) {
+      curve.add(new Vec2D(mouseX, mouseY));
+    }
   }
 
   Vec2D[] translateCurve(Vec2D[] curve, Vec2D translation) {
@@ -410,26 +371,32 @@ class DisplayWindow extends PApplet {
   }
 
   void keyPressed() {
-    if (key == ' ') {
-      int date = (year() % 100) * 10000 + month() * 100 + day();
-      int time = hour() * 10000 + minute() * 100 + second();
-      ribbonsLayer.save(path + "out/date-"+ date + "_time-"+ time + ".png");
-    }
-    if (key == 'e') {
+    if (key == ControlKeys.ERASE.getKey()) {
       int date = (year() % 100) * 10000 + month() * 100 + day();
       int time = hour() * 10000 + minute() * 100 + second();
       ribbonsLayer.save(path + "out/autosave-date-"+ date + "_time-"+ time + ".png");
       this.clearCanvas();
     }
-    if (key == 'p') {
-      this.printComposition();
+    if (key == ControlKeys.PRINT_PNG.getKey()) {
+      int date = (year() % 100) * 10000 + month() * 100 + day();
+      int time = hour() * 10000 + minute() * 100 + second();
+      ribbonsLayer.save(path + "out/date-"+ date + "_time-"+ time + ".png");
     }
-    if (key == 's') {
+    // if (key == ControlKeys.SHOW_ON_PRINT_DISPLAY.getKey()) {
+    //   this.printComposition();
+    // }
+    if (key == ControlKeys.PRINT_SVG.getKey()) {
       this.printAllRibbonsToSVG();
     }
-    if(key == 'c') {
+    if(key == ControlKeys.COLOR.getKey()) {
       lastRibbonColorIndex = (lastRibbonColorIndex + 1) % colors.length;
     }
+
+    if(keyCode == TAB) {
+      println("tab");
+      this.mode.change();
+    }
+
     if(key == CODED) {
       if (keyCode == LEFT) {
         this.pos.x = this.pos.x - .1 >= 0 ? this.pos.x - .1 : 0;
