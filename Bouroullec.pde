@@ -52,7 +52,7 @@ class CurrentMode {
   }
 
   void change() {
-    Mode[] modesInOrder = new Mode[]{Mode.DRAW, Mode.EXTEND, Mode.SELECT_RIBBON};
+    Mode[] modesInOrder = new Mode[]{Mode.DRAW, Mode.EXTEND, Mode.SELECT_RIBBON, Mode.CUT_RIBBON};
     int len = modesInOrder.length;
     int index = Arrays.asList(modesInOrder).indexOf(this.currentMode);
     this.currentMode = modesInOrder[(index + 1) % len];
@@ -185,7 +185,7 @@ class DisplayWindow extends PApplet {
 
     image(this.ribbonsLayer, 0, 0, width, height);
 
-    if (this.mode.current() == Mode.EXTEND) {
+    if (this.mode.current() == Mode.EXTEND || this.mode.current() == Mode.CUT_RIBBON) {
       this.printRibbonButtons();
       image(this.interactiveLayer, 0, 0, width, height);
     }
@@ -308,6 +308,16 @@ class DisplayWindow extends PApplet {
     }
   }
 
+  void cut(Ribbon current) {
+    Ribbon[] newRibbons = current.cut(this.getMousePos(), 10);
+    if (newRibbons != null) {
+      this.ribbonMemory.addRibbon(newRibbons[0]);
+      this.ribbonMemory.addRibbon(newRibbons[1]);
+      printNewRibbon(newRibbons[0]);
+      printNewRibbon(newRibbons[1]);
+    }
+  }
+
   // Event methods
 
   boolean extending = false;
@@ -324,7 +334,7 @@ class DisplayWindow extends PApplet {
 
   void mouseMoved() {
     Mode currentMode = this.mode.current();
-    if (currentMode == Mode.EXTEND) {
+    if (currentMode == Mode.EXTEND || currentMode == Mode.CUT_RIBBON) {
       if (this.isOverButton() != null) {
         cursor(HAND);
       } else {
@@ -376,11 +386,16 @@ class DisplayWindow extends PApplet {
       }
     }
 
-    if(this.mode.current() == Mode.SELECT_RIBBON) {
+    if (this.mode.current() == Mode.SELECT_RIBBON) {
       Ribbon currentRibbon = this.ribbonMemory.isOverRibbon(this.getMousePos(), 10);
       Ribbon newRibbon = currentRibbon.duplicate();
       addNewRibbon(newRibbon);
       printNewRibbon(newRibbon);
+    }
+
+    if (this.mode.current() == Mode.CUT_RIBBON) {
+      Ribbon currentRibbon = this.isOverButton();
+      if (currentRibbon != null) this.cut(currentRibbon);
     }
   }
 
@@ -402,22 +417,22 @@ class DisplayWindow extends PApplet {
     if (key == ControlKeys.PRINT_SVG.getKey()) {
       this.printAllRibbonsToSVG();
     }
-    if(key == ControlKeys.COLOR.getKey()) {
+    if (key == ControlKeys.COLOR.getKey()) {
       lastRibbonColorIndex = (lastRibbonColorIndex + 1) % colors.length;
     }
 
-    if(keyCode == TAB) {
+    if (keyCode == TAB) {
       this.mode.change();
     }
 
-    if(this.mode.current() == Mode.EXTEND && key == CODED) {
-      if(keyCode == LEFT) {
+    if (this.mode.current() == Mode.EXTEND || this.mode.current() == Mode.CUT_RIBBON && key == CODED) {
+      if (keyCode == LEFT) {
         this.ribbonMemory.selectPreviousBorderRibbon();
       }
-      if(keyCode == RIGHT) {
+      if (keyCode == RIGHT) {
         this.ribbonMemory.selectNextBorderRibbon();
       }
-      if(keyCode == DOWN) {
+      if (keyCode == DOWN) {
         this.ribbonMemory.unSelectBorderRibbon();
       }
     }

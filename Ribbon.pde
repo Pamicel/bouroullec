@@ -148,7 +148,6 @@ class RibbonButtons {
   Ribbon ribbon = null;
   RibbonButtons(Ribbon ribbon) {
     this.ribbon = ribbon;
-
   }
 }
 
@@ -473,10 +472,6 @@ class Ribbon {
     for (RibbonEndButtons buttons : this.allButtons) {
       buttons.display(layer);
     }
-    // if (this.frontButtons != null && this.backButtons != null) {
-    //   this.frontButtons.display(layer);
-    //   this.backButtons.display(layer);
-    // }
   }
 
   Ribbon createAndAssignLeftRibbon(float linearDensity, Vec2D[] variationCurve) {
@@ -582,6 +577,49 @@ class Ribbon {
       invertedCurve[i] = this.curve[this.curve.length - 1 - i];
     }
     return new Ribbon(invertedCurve);
+  }
+
+  Ribbon[] cut(Vec2D mousePos, float tolerance) {
+    // If is over a button, find the button and cut the ribbon at the center of the button
+    for (RibbonEndButtons buttons : this.allButtons) {
+      if (buttons.isHoverLeftBank(mousePos.x, mousePos.y)) {
+        // The center is a point from the curve
+        return this.cutAtPoint(buttons.center);
+      }
+      if (buttons.isHoverRightBank(mousePos.x, mousePos.y)) {
+        // The center is a point from the curve
+        return this.cutAtPoint(buttons.center);
+      }
+    }
+    return null;
+  }
+
+  Ribbon[] cutAtPoint(Vec2D curvePoint) {
+    // Find the index of the point in the curve
+    int index = -1;
+    for (int i = 0; i < this.curve.length; i++) {
+      if (this.curve[i] == curvePoint) {
+        index = i;
+        break;
+      }
+    }
+    if (index == -1) {
+      return null;
+    }
+    // Create the two new curves
+    Vec2D[] firstCurve = new Vec2D[index + 1];
+    Vec2D[] secondCurve = new Vec2D[this.curve.length - index];
+    for (int i = 0; i < firstCurve.length; i++) {
+      firstCurve[i] = this.curve[i];
+    }
+    for (int i = 0; i < secondCurve.length; i++) {
+      secondCurve[i] = this.curve[index + i];
+    }
+    // Create the two new ribbons
+    Ribbon firstRibbon = new Ribbon(firstCurve);
+    Ribbon secondRibbon = new Ribbon(secondCurve);
+    // Return the two new ribbons
+    return new Ribbon[] {firstRibbon, secondRibbon};
   }
 }
 
