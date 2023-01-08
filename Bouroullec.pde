@@ -185,12 +185,13 @@ class DisplayWindow extends PApplet {
 
     image(this.ribbonsLayer, 0, 0, width, height);
 
-    if (this.mode.current() == Mode.EXTEND || this.mode.current() == Mode.CUT_RIBBON) {
-      this.printRibbonButtons();
+    Mode currentMode = this.mode.current();
+    if (currentMode == Mode.EXTEND || currentMode == Mode.CUT_RIBBON) {
+      this.printRibbonButtons(currentMode);
       image(this.interactiveLayer, 0, 0, width, height);
     }
 
-    if (this.mode.current() == Mode.SELECT_RIBBON) {
+    if (currentMode == Mode.SELECT_RIBBON) {
       this.printSelectedRibbon();
       image(this.interactiveLayer, 0, 0, width, height);
     }
@@ -247,18 +248,19 @@ class DisplayWindow extends PApplet {
     ribbonsLayer.endDraw();
   }
 
-  void printRibbonButtons() {
+  void printRibbonButtons(Mode mode) {
     Ribbon selectedBorderRibbon = this.ribbonMemory.getSelectedBorderRibbon();
     interactiveLayer.beginDraw();
     interactiveLayer.clear();
+    ArrowStyle arrowStyle = mode == Mode.EXTEND ? ArrowStyle.ARROW_OUT : ArrowStyle.LINE;
     if (selectedBorderRibbon != null) {
-      selectedBorderRibbon.displayEndButtons(interactiveLayer);
+      selectedBorderRibbon.displayEndButtons(arrowStyle, interactiveLayer);
     } else {
       Ribbon[] allRibbons = ribbonMemory.getAllRibbons();
       Ribbon currentRibbon;
       for (int i = 0; i < allRibbons.length; i++) {
         currentRibbon = allRibbons[i];
-        currentRibbon.displayEndButtons(interactiveLayer);
+        currentRibbon.displayEndButtons(arrowStyle, interactiveLayer);
       }
     }
     interactiveLayer.endDraw();

@@ -14,6 +14,10 @@ class Arrow {
   }
 
   void display(PGraphics layer) {
+    this.display(ArrowStyle.ARROW_OUT, layer);
+  }
+
+  void display(ArrowStyle style, PGraphics layer) {
     layer.push();
     // Highlight with a red circle
     if (this.highlight) {
@@ -21,6 +25,28 @@ class Arrow {
       layer.noStroke();
       layer.circle(this.midPoint.x, this.midPoint.y, this.arrowLength);
     }
+    layer.pop();
+    if (style == ArrowStyle.LINE) {
+      this.drawLine(layer);
+    } else if (style == ArrowStyle.ARROW_OUT) {
+      this.drawArrowOut(layer);
+    }
+  }
+
+  void drawLine(PGraphics layer) {
+    layer.push();
+    layer.pushMatrix();
+    layer.translate(this.start.x, this.start.y);
+    layer.rotate(this.arrowHeading);
+    layer.strokeWeight(1);
+    layer.stroke(0);
+    layer.line(0, 0, this.arrowLength, 0);
+    layer.popMatrix();
+    layer.pop();
+  }
+
+  void drawArrowOut(PGraphics layer) {
+    layer.push();
     layer.pushMatrix();
     layer.translate(this.start.x, this.start.y);
     layer.rotate(this.arrowHeading);
@@ -44,6 +70,11 @@ class Arrow {
   void setHighlighted(boolean highlighted) {
     this.highlight = highlighted;
   }
+}
+
+enum ArrowStyle {
+  LINE,
+  ARROW_OUT;
 }
 
 class RibbonEndButtons {
@@ -130,16 +161,16 @@ class RibbonEndButtons {
     return this.isHover(this.center, mX, mY, this.arrowLength);
   }
 
-  void display(PGraphics layer) {
+  void display(ArrowStyle arrowStyle, PGraphics layer) {
     Vec2D left = this.getLeft();
     Vec2D right = this.getRight();
     int lenFactor = 10;
 
     if (left != null) {
-      this.leftArrow.display(layer);
+      this.leftArrow.display(arrowStyle, layer);
     }
     if (right != null) {
-      this.rightArrow.display(layer);
+      this.rightArrow.display(arrowStyle, layer);
     }
   }
 }
@@ -468,9 +499,9 @@ class Ribbon {
     this.backButtons = this.allButtons.get(this.allButtons.size() - 1);
   }
 
-  void displayEndButtons(PGraphics layer) {
+  void displayEndButtons(ArrowStyle arrowStyle, PGraphics layer) {
     for (RibbonEndButtons buttons : this.allButtons) {
-      buttons.display(layer);
+      buttons.display(arrowStyle, layer);
     }
   }
 
