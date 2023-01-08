@@ -120,7 +120,7 @@ class DisplayWindow extends PApplet {
   ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
   Vec2D[] resampledCurve = null;
   RibbonMemory ribbonMemory;
-  PGraphics ribbonsLayer, buttonsLayer, interactiveLayer;
+  PGraphics ribbonsLayer, interactiveLayer;
   final float LINEAR_DENSITY = DISPLAY_WINDOW_LINEAR_DENSITY;
 
   // Processing methods
@@ -142,7 +142,7 @@ class DisplayWindow extends PApplet {
     this.yRatio = (float)this.height / this.ribbonsLayer.height;
     this.scale = 1.0 / xRatio;
     this.ribbonMemory = new RibbonMemory();
-    this.buttonsLayer = createGraphics(ribbonsLayer.width, ribbonsLayer.height);
+    this.interactiveLayer = createGraphics(ribbonsLayer.width, ribbonsLayer.height);
   }
 
   // void printComposition () {
@@ -155,9 +155,9 @@ class DisplayWindow extends PApplet {
     this.ribbonsLayer.beginDraw();
     this.ribbonsLayer.clear();
     this.ribbonsLayer.endDraw();
-    this.buttonsLayer.beginDraw();
-    this.buttonsLayer.clear();
-    this.buttonsLayer.endDraw();
+    this.interactiveLayer.beginDraw();
+    this.interactiveLayer.clear();
+    this.interactiveLayer.endDraw();
     this.ribbonMemory = new RibbonMemory();
     this.mode.reset();
   }
@@ -185,24 +185,17 @@ class DisplayWindow extends PApplet {
       }
       endShape();
     }
-    // image(
-    //   this.ribbonsLayer,
-    //   - this.pos.x * this.ribbonsLayer.width,
-    //   - this.pos.y * this.ribbonsLayer.height
-    // );
-    // image(
-    //   this.buttonsLayer,
-    //   - this.pos.x * this.buttonsLayer.width,
-    //   - this.pos.y * this.buttonsLayer.height
-    // );
+
     image(this.ribbonsLayer, 0, 0, width, height);
+
     if (this.mode.current() == Mode.EXTEND) {
       this.printRibbonButtons();
-      image(this.buttonsLayer, 0, 0, width, height);
+      image(this.interactiveLayer, 0, 0, width, height);
     }
+
     if (this.mode.current() == Mode.SELECT_RIBBON) {
       this.printSelectedRibbon();
-      image(this.buttonsLayer, 0, 0, width, height);
+      image(this.interactiveLayer, 0, 0, width, height);
     }
 
     Vec2D currentTranslation = this.getCurrentTranslation();
@@ -260,26 +253,26 @@ class DisplayWindow extends PApplet {
   void printRibbonButtons() {
     Ribbon[] allRibbons = ribbonMemory.getAllRibbons();
     Ribbon currentRibbon;
-    buttonsLayer.beginDraw();
-    buttonsLayer.clear();
+    interactiveLayer.beginDraw();
+    interactiveLayer.clear();
     for (int i = 0; i < allRibbons.length; i++) {
       currentRibbon = allRibbons[i];
-      currentRibbon.displayEndButtons(buttonsLayer);
+      currentRibbon.displayEndButtons(interactiveLayer);
     }
-    buttonsLayer.endDraw();
+    interactiveLayer.endDraw();
   }
 
   void printSelectedRibbon() {
     Ribbon selectedRibbon = this.ribbonMemory.getSelectedRibbon();
-    buttonsLayer.beginDraw();
-    buttonsLayer.clear();
+    interactiveLayer.beginDraw();
+    interactiveLayer.clear();
     if (selectedRibbon != null) {
-      selectedRibbon.displayCurveSmooth(this.buttonsLayer);
+      selectedRibbon.displayCurveSmooth(this.interactiveLayer);
     }
     // Draw red circle around mouse
-    buttonsLayer.stroke(255, 0, 0);
-    buttonsLayer.circle(mouseX, mouseY, 5);
-    buttonsLayer.endDraw();
+    interactiveLayer.stroke(255, 0, 0);
+    interactiveLayer.circle(mouseX, mouseY, 5);
+    interactiveLayer.endDraw();
   }
 
   void addNewRibbon(Ribbon newRibbon) {
