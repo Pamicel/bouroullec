@@ -251,8 +251,6 @@ class Ribbon {
   Vec2D[] curve = new Vec2D[0];
   Vec2D[] normals = new Vec2D[0];
   color col = color(0);
-  color highlightColor = color(255, 0, 0);
-  boolean isHighlighted = false;
 
   RibbonEndButtons frontButtons = null,
                   backButtons = null;
@@ -294,14 +292,6 @@ class Ribbon {
 
   void assignRightRibbon(Ribbon rightRibbon) {
     this.rightRibbon = rightRibbon;
-  }
-
-  void highlight() {
-    this.isHighlighted = true;
-  }
-
-  void removeHighlight() {
-    this.isHighlighted = false;
   }
 
   void displayCurve(PGraphics layer) {
@@ -442,7 +432,7 @@ class Ribbon {
   }
 
   void displayCurveSmooth(PGraphics layer) {
-    layer.stroke(this.isHighlighted ? this.highlightColor : this.col);
+    layer.stroke(this.col);
     layer.strokeCap(SQUARE);
     layer.strokeWeight(this.ribbonWid);
     layer.noFill();
@@ -612,43 +602,6 @@ class Ribbon {
     return isOver;
   }
 
-  /**
-   * Returns the distance of the closest point on the curve to the mouse position, or -1 if the closest point is further than tolerance
-   */
-  float isOverCurve(Vec2D mousePos, float tolerance) {
-    // pre select points that are in the tolerance * tolerance square around the mouse (simpler than computing the distance to each point)
-    ArrayList<Vec2D> candidates = new ArrayList<Vec2D>();
-    for (int i = 0; i < this.curve.length; i++) {
-      Vec2D point = this.curve[i];
-      if (
-        point.x - tolerance < mousePos.x &&
-        mousePos.x < point.x + tolerance &&
-        point.y - tolerance < mousePos.y &&
-        mousePos.y < point.y + tolerance
-      ) {
-        candidates.add(point);
-      }
-    }
-    // Return closest point to the mouse in the candidate points, simply ignore if closest distance is greater than tolerance
-    if (candidates.size() > 0) {
-      Vec2D closest = candidates.get(0);
-      float minDist = closest.distanceTo(mousePos);
-      for (int i = 1; i < candidates.size(); i++) {
-        Vec2D candidate = candidates.get(i);
-        float dist = candidate.distanceTo(mousePos);
-        if (dist < minDist) {
-          closest = candidate;
-          minDist = dist;
-        }
-      }
-      if (minDist < tolerance) {
-        return minDist;
-      }
-    }
-    // If the candidate list is empty, return -1
-    return -1;
-  }
-
   Ribbon extend(Vec2D mousePos, Vec2D[] variationCurve, float linearDensity) {
     if (this.isOverLeft(mousePos)) {
       return this.createAndAssignLeftRibbon(linearDensity, variationCurve);
@@ -671,7 +624,6 @@ class Ribbon {
 class RibbonMemory {
   HashSet<Ribbon> allRibbons = new HashSet<Ribbon>();
   ArrayList<RibbonEndButtons> allButtons = new ArrayList<RibbonEndButtons>();
-  Ribbon selectedRibbon = null;
 
   RibbonMemory() {}
 
@@ -689,29 +641,6 @@ class RibbonMemory {
     return this.allRibbons.toArray(new Ribbon[this.allRibbons.size()]);
   }
 
-  void unselectRibbon() {
-    if (this.selectedRibbon != null) {
-      this.selectedRibbon.removeHighlight();
-      this.selectedRibbon = null;
-    }
-  }
-
-  void selectRibbon(Ribbon ribbon) {
-    this.unselectRibbon();
-
-    boolean isNull = ribbon == null;
-    boolean isAlreadySelected = !isNull && this.selectedRibbon == ribbon;
-    if (isNull || isAlreadySelected) {
-      return;
-    }
-
-    ribbon.highlight();
-    this.selectedRibbon = ribbon;
-  }
-
-  Ribbon getSelectedRibbon() {
-    return this.selectedRibbon;
-  }
 
   /**
    * Take a list of ribbons eg [ R1, R2, R3, R4, R5, R6, R7, R8, R9, R10 ]
@@ -801,22 +730,6 @@ class RibbonMemory {
       }
     }
     return null;
-  }
-
-  Ribbon isOverRibbon(Vec2D mousePos, float tolerance) {
-    float minDist = -1;
-    Ribbon closest = null;
-
-    for (Ribbon ribbon : this.allRibbons) {
-      float distance = ribbon.isOverCurve(mousePos, tolerance);
-
-      if (distance != -1 && (distance < minDist || minDist == -1)) {
-        minDist = distance;
-        closest = ribbon;
-      }
-    }
-    // Return the closest ribbon
-    return closest;
   }
 
   void addRibbons(ArrayList<Ribbon> ribbons) {

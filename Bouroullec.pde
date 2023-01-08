@@ -41,7 +41,7 @@ color[] colors = new color[] {
 int lastRibbonColorIndex = 0;
 
 enum Mode {
-  DRAW, EXTEND
+  DRAW, EXTEND, SELECT_RIBBON
 }
 
 class CurrentMode {
@@ -54,7 +54,9 @@ class CurrentMode {
   void change() {
     if (this.currentMode == Mode.DRAW) {
       this.currentMode = Mode.EXTEND;
-    } else {
+    } else if (this.currentMode == Mode.EXTEND) {
+      this.currentMode = Mode.SELECT_RIBBON;
+    } else if (this.currentMode == Mode.SELECT_RIBBON) {
       this.currentMode = Mode.DRAW;
     }
   }
@@ -198,12 +200,13 @@ class DisplayWindow extends PApplet {
       this.printRibbonButtons();
       image(this.buttonsLayer, 0, 0, width, height);
     }
+    if (this.mode.current() == Mode.SELECT_RIBBON) {
+      this.printSelectedRibbon();
+      image(this.buttonsLayer, 0, 0, width, height);
+    }
 
     Vec2D currentTranslation = this.getCurrentTranslation();
     Vec2D mousePos = new Vec2D(mouseX + currentTranslation.x, mouseY + currentTranslation.y).scale(this.scale);
-    // Draw red circle around mouse
-    stroke(255, 0, 0);
-    circle(mousePos.x, mousePos.y, 5);
   }
 
   // Sketch methods
@@ -266,6 +269,19 @@ class DisplayWindow extends PApplet {
     buttonsLayer.endDraw();
   }
 
+  void printSelectedRibbon() {
+    Ribbon selectedRibbon = this.ribbonMemory.getSelectedRibbon();
+    buttonsLayer.beginDraw();
+    buttonsLayer.clear();
+    if (selectedRibbon != null) {
+      selectedRibbon.displayCurveSmooth(this.buttonsLayer);
+    }
+    // Draw red circle around mouse
+    buttonsLayer.stroke(255, 0, 0);
+    buttonsLayer.circle(mouseX, mouseY, 5);
+    buttonsLayer.endDraw();
+  }
+
   void addNewRibbon(Ribbon newRibbon) {
     ribbonMemory.addRibbon(newRibbon);
   }
@@ -302,27 +318,32 @@ class DisplayWindow extends PApplet {
   boolean extending = false;
 
   void mouseDragged() {
-    if (this.mode.current() == Mode.EXTEND) {
+    Mode currentMode = this.mode.current();
+    if (currentMode == Mode.EXTEND) {
       Ribbon currentRibbon = this.isOverButton();
       if (currentRibbon != null) this.extend(currentRibbon);
-    } else if (this.mode.current() != Mode.EXTEND) {
+    } else if (currentMode == Mode.DRAW) {
       curve.add(new Vec2D(mouseX, mouseY));
     }
   }
 
   void mouseMoved() {
-    if (this.mode.current() == Mode.EXTEND) {
+    Mode currentMode = this.mode.current();
+    if (currentMode == Mode.EXTEND) {
       if (this.isOverButton() != null) {
         cursor(HAND);
       } else {
         cursor(ARROW);
       }
+    } else if (currentMode == Mode.SELECT_RIBBON) {
+      Ribbon currentRibbon = this.ribbonMemory.isOverRibbon(this.getMousePos(), 10);
+      this.ribbonMemory.selectRibbon(currentRibbon);
     }
   }
 
   void mousePressed() {
     curve = new ArrayList<Vec2D>();
-    if (this.mode.current() != Mode.EXTEND) {
+    if (this.mode.current() == Mode.DRAW) {
       curve.add(new Vec2D(mouseX, mouseY));
     }
   }
