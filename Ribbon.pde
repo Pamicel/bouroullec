@@ -564,6 +564,14 @@ class Ribbon {
     return null;
   }
 
+  Ribbon duplicate() {
+    Vec2D[] newCurve = new Vec2D[this.curve.length];
+    for (int i = 0; i < this.curve.length; i++) {
+      newCurve[i] = this.curve[i].copy();
+    }
+    return new Ribbon(newCurve);
+  }
+
   Ribbon getInverted() {
     Vec2D[] invertedCurve = new Vec2D[this.curve.length];
     for (int i = 0; i < this.curve.length; i++) {

@@ -360,21 +360,25 @@ class DisplayWindow extends PApplet {
   void mouseReleased() {
     extending = false;
 
-    Ribbon newRibbon;
-
     boolean drewCurve = curve.size() > 1;
     if (drewCurve) {
       resampledCurve = densityResample(curve, this.LINEAR_DENSITY);
       resampledCurve = translateCurve(resampledCurve, this.getCurrentTranslation());
       resampledCurve = rescaleCurve(resampledCurve, this.scale);
       if (resampledCurve.length > 1) {
-        newRibbon = new Ribbon(resampledCurve);
+        Ribbon newRibbon = new Ribbon(resampledCurve);
         newRibbon.col = colors[lastRibbonColorIndex];
         lastRibbonColorIndex = (lastRibbonColorIndex + 1) % colors.length;
         addNewRibbon(newRibbon);
         printNewRibbon(newRibbon);
-        this.printRibbonButtons();
       }
+    }
+
+    if(this.mode.current() == Mode.SELECT_RIBBON) {
+      Ribbon currentRibbon = this.ribbonMemory.isOverRibbon(this.getMousePos(), 10);
+      Ribbon newRibbon = currentRibbon.duplicate();
+      addNewRibbon(newRibbon);
+      printNewRibbon(newRibbon);
     }
 
   }
