@@ -193,6 +193,10 @@ class Ribbon {
     return this.leftRibbon != null;
   }
 
+  boolean isBorderRibbon() {
+    return (!this.hasLeftBank()) || (!this.hasRightBank());
+  }
+
   void assignLeftRibbon(Ribbon leftRibbon) {
     this.leftRibbon = leftRibbon;
   }
@@ -585,11 +589,16 @@ class RibbonMemory {
   HashSet<Ribbon> allRibbons = new HashSet<Ribbon>();
   ArrayList<RibbonEndButtons> allButtons = new ArrayList<RibbonEndButtons>();
   Ribbon selectedRibbon = null;
+  Ribbon selectedBorderRibbon = null;
+  ArrayList<Ribbon> borderRibbons = new ArrayList<Ribbon>();
 
   RibbonMemory() {}
 
   void addRibbon(Ribbon ribbon) {
     this.allRibbons.add(ribbon);
+    this.borderRibbons.add(ribbon);
+    this.selectedBorderRibbon = ribbon;
+    this.refreshBorderRibbons();
     this.addRibbonButtons(ribbon);
   }
 
@@ -700,7 +709,8 @@ class RibbonMemory {
 
   Ribbon isOverButton(Vec2D mousePos) {
     this.resetButtonHightlights();
-    for (RibbonEndButtons button : this.allButtons) {
+    ArrayList<RibbonEndButtons> allButtons = this.selectedBorderRibbon == null ? this.allButtons : this.selectedBorderRibbon.allButtons;
+    for (RibbonEndButtons button : allButtons) {
       boolean isOverLeft = button.isHoverLeftBank(mousePos.x, mousePos.y);
       boolean isOverRight = button.isHoverRightBank(mousePos.x, mousePos.y);
       if (isOverLeft) {
@@ -736,6 +746,58 @@ class RibbonMemory {
     Iterator<Ribbon> it = ribbons.iterator();
     while(it.hasNext()) {
       this.addRibbon(it.next());
+    }
+  }
+
+  Ribbon getSelectedBorderRibbon() {
+    return this.selectedBorderRibbon;
+  }
+
+  /**
+   * Select the next border ribbon in this.borderRibbons
+   * If there is no currently selected border ribbon, select the first border ribbon in this.borderRibbons
+   */
+  void changeSelectedBorderRibbon(int shift) {
+    if (this.borderRibbons.size() == 0) {
+      return;
+    }
+    // Find the currently selected border ribbon in this.borderRibbons
+    // If there is no currently selected border ribbon, select the first border ribbon in this.borderRibbons
+    if (this.selectedBorderRibbon == null) {
+      this.selectedBorderRibbon = this.borderRibbons.get(shift > 0 ? 0 : this.borderRibbons.size() - 1);
+      return;
+    }
+    int index = this.borderRibbons.indexOf(this.selectedBorderRibbon);
+    int len = this.borderRibbons.size();
+    int newIndex = index + shift;
+    // if the new index is -1 or len, select null
+    if (newIndex == -1 || newIndex == len) {
+      this.selectedBorderRibbon = null;
+      return;
+    }
+    this.selectedBorderRibbon = this.borderRibbons.get((newIndex % len) + (newIndex < 0 ? len : 0));
+  }
+
+  void selectNextBorderRibbon() {
+    this.changeSelectedBorderRibbon(1);
+  }
+
+  void selectPreviousBorderRibbon() {
+    this.changeSelectedBorderRibbon(-1);
+  }
+
+  void unSelectBorderRibbon() {
+    this.selectedBorderRibbon = null;
+  }
+
+  void refreshBorderRibbons() {
+    // Go through this.borderRibbons and remove all ribbons that are not border ribbons anymore from this.borderRibbons
+    Iterator<Ribbon> it = this.borderRibbons.iterator();
+    while(it.hasNext()) {
+      Ribbon ribbon = it.next();
+      if (!ribbon.isBorderRibbon()) {
+        it.remove();
+      }
     }
   }
 }

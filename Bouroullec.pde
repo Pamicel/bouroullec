@@ -41,7 +41,7 @@ color[] colors = new color[] {
 int lastRibbonColorIndex = 0;
 
 enum Mode {
-  DRAW, EXTEND, SELECT_RIBBON
+  DRAW, EXTEND, SELECT_RIBBON, CUT_RIBBON
 }
 
 class CurrentMode {
@@ -52,13 +52,10 @@ class CurrentMode {
   }
 
   void change() {
-    if (this.currentMode == Mode.DRAW) {
-      this.currentMode = Mode.EXTEND;
-    } else if (this.currentMode == Mode.EXTEND) {
-      this.currentMode = Mode.SELECT_RIBBON;
-    } else if (this.currentMode == Mode.SELECT_RIBBON) {
-      this.currentMode = Mode.DRAW;
-    }
+    Mode[] modesInOrder = new Mode[]{Mode.DRAW, Mode.EXTEND, Mode.SELECT_RIBBON};
+    int len = modesInOrder.length;
+    int index = Arrays.asList(modesInOrder).indexOf(this.currentMode);
+    this.currentMode = modesInOrder[(index + 1) % len];
   }
 
   void reset() {
@@ -251,13 +248,18 @@ class DisplayWindow extends PApplet {
   }
 
   void printRibbonButtons() {
-    Ribbon[] allRibbons = ribbonMemory.getAllRibbons();
-    Ribbon currentRibbon;
+    Ribbon selectedBorderRibbon = this.ribbonMemory.getSelectedBorderRibbon();
     interactiveLayer.beginDraw();
     interactiveLayer.clear();
-    for (int i = 0; i < allRibbons.length; i++) {
-      currentRibbon = allRibbons[i];
-      currentRibbon.displayEndButtons(interactiveLayer);
+    if (selectedBorderRibbon != null) {
+      selectedBorderRibbon.displayEndButtons(interactiveLayer);
+    } else {
+      Ribbon[] allRibbons = ribbonMemory.getAllRibbons();
+      Ribbon currentRibbon;
+      for (int i = 0; i < allRibbons.length; i++) {
+        currentRibbon = allRibbons[i];
+        currentRibbon.displayEndButtons(interactiveLayer);
+      }
     }
     interactiveLayer.endDraw();
   }
@@ -276,7 +278,7 @@ class DisplayWindow extends PApplet {
   }
 
   void addNewRibbon(Ribbon newRibbon) {
-    ribbonMemory.addRibbon(newRibbon);
+    this.ribbonMemory.addRibbon(newRibbon);
   }
 
   Vec2D getCurrentTranslation() {
@@ -380,7 +382,6 @@ class DisplayWindow extends PApplet {
       addNewRibbon(newRibbon);
       printNewRibbon(newRibbon);
     }
-
   }
 
   void keyPressed() {
@@ -406,22 +407,18 @@ class DisplayWindow extends PApplet {
     }
 
     if(keyCode == TAB) {
-      println("tab");
       this.mode.change();
     }
 
-    if(key == CODED) {
-      if (keyCode == LEFT) {
-        this.pos.x = this.pos.x - .1 >= 0 ? this.pos.x - .1 : 0;
+    if(this.mode.current() == Mode.EXTEND && key == CODED) {
+      if(keyCode == LEFT) {
+        this.ribbonMemory.selectPreviousBorderRibbon();
       }
       if(keyCode == RIGHT) {
-        this.pos.x = this.pos.x + .1 <= 1.0 - xRatio ? this.pos.x + .1 : 1.0 - xRatio;
+        this.ribbonMemory.selectNextBorderRibbon();
       }
-      if (keyCode == DOWN) {
-        this.pos.y = this.pos.y - .1 >= 0 ? this.pos.y - .1 : 0;
-      }
-      if(keyCode == UP) {
-        this.pos.y = this.pos.y + .1 <= 1.0 - yRatio ? this.pos.y + .1 : 1.0 - yRatio;
+      if(keyCode == DOWN) {
+        this.ribbonMemory.unSelectBorderRibbon();
       }
     }
   }
