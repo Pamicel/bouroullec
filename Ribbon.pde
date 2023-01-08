@@ -1,60 +1,8 @@
-// class Rectangle {
-//   Vec2D pointA, pointB, pointC, pointD;
-//   float area;
-
-//   Rectangle(Vec2D arrowStart, float arrowLength, float arrowWidth, float arrowHeading) {
-//     Vec2D pointA = arrowStart.add(new Vec2D(0, arrowWidth / 2).rotate(arrowHeading));
-//     Vec2D pointB = arrowStart.add(new Vec2D(arrowLength, arrowWidth / 2).rotate(arrowHeading));
-//     Vec2D pointC = arrowStart.add(new Vec2D(arrowLength, -arrowWidth / 2).rotate(arrowHeading));
-//     Vec2D pointD = arrowStart.add(new Vec2D(0, -arrowWidth / 2).rotate(arrowHeading));
-//     this.initialize(pointA, pointB, pointC, pointD);
-//   }
-
-//   private void initialize(Vec2D pointA, Vec2D pointB, Vec2D pointC, Vec2D pointD) {
-//     this.pointA = pointA;
-//     this.pointB = pointB;
-//     this.pointC = pointC;
-//     this.pointD = pointD;
-//     this.area = areaOfATriangle(this.pointA, this.pointB, this.pointC) +
-//                 areaOfATriangle(this.pointA, this.pointC, this.pointD);
-//   }
-
-//   private float areaOfATriangle(Vec2D a, Vec2D b, Vec2D c) {
-//     return abs((a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y)) / 2.0f);
-//   }
-
-//   boolean isInside(Vec2D point, float epsilon) {
-//     // Calculate the sum of areas of △APD, △DPC, △CPB, △PBA.
-//     // If the sum is equal to the area of the rectangle, then the point lies inside the rectangle.
-//     float areaOfAPD = areaOfATriangle(this.pointA, point, this.pointD);
-//     float areaOfDPC = areaOfATriangle(this.pointD, point, this.pointC);
-//     float areaOfCPB = areaOfATriangle(this.pointC, point, this.pointB);
-//     float areaOfPBA = areaOfATriangle(this.pointB, point, this.pointA);
-//     float sumOfAreas = areaOfAPD + areaOfDPC + areaOfCPB + areaOfPBA;
-//     return Math.abs(sumOfAreas - this.area) < epsilon;
-//   }
-
-//   void display(PGraphics layer) {
-//     layer.push();
-//     layer.noFill();
-//     layer.stroke(0);
-//     layer.strokeWeight(1);
-//     layer.beginShape();
-//     layer.vertex(this.pointA.x, this.pointA.y);
-//     layer.vertex(this.pointB.x, this.pointB.y);
-//     layer.vertex(this.pointC.x, this.pointC.y);
-//     layer.vertex(this.pointD.x, this.pointD.y);
-//     layer.endShape(CLOSE);
-//     layer.pop();
-//   }
-// }
-
 class Arrow {
   Vec2D start, midPoint;
   float arrowLength;
   float arrowWidth;
   float arrowHeading;
-  // Rectangle rectangle;
   boolean highlight = false;
 
   Arrow(Vec2D start, float length, float heading) {
@@ -63,11 +11,9 @@ class Arrow {
     this.arrowWidth = this.arrowLength / 2;
     this.arrowHeading = heading;
     this.midPoint = this.start.add(new Vec2D(this.arrowLength / 2, 0).rotate(this.arrowHeading));
-    // this.rectangle = new Rectangle(this.start, this.arrowLength * 1.2, this.arrowWidth * 1.2, this.arrowHeading);
   }
 
   void display(PGraphics layer) {
-    // this.rectangle.display(layer);
     layer.push();
     // Highlight with a red circle
     if (this.highlight) {
@@ -184,40 +130,6 @@ class RibbonEndButtons {
     return this.isHover(this.center, mX, mY, this.arrowLength);
   }
 
-  void displayArrow(Vec2D position, float heading, PGraphics layer, boolean highlight) {
-    layer.push();
-
-    layer.noStroke();
-    layer.fill(255, 0, 0);
-    layer.beginShape();
-    Vec2D pointA = position.add(new Vec2D(0, this.arrowLength / 4).rotate(heading));
-    Vec2D pointB = position.add(new Vec2D(this.arrowLength, this.arrowLength / 4).rotate(heading));
-    Vec2D pointC = position.add(new Vec2D(this.arrowLength, -this.arrowLength / 4).rotate(heading));
-    Vec2D pointD = position.add(new Vec2D(0, -this.arrowLength / 4).rotate(heading));
-    layer.vertex(pointA.x, pointA.y);
-    layer.vertex(pointB.x, pointB.y);
-    layer.vertex(pointC.x, pointC.y);
-    layer.vertex(pointD.x, pointD.y);
-    layer.endShape(CLOSE);
-
-    layer.pushMatrix();
-    layer.translate(position.x, position.y);
-    layer.rotate(heading);
-      // layer.noStroke();
-      // layer.fill(255, 0, 0);
-      // layer.circle(this.arrowLength / 2, 0, this.arrowLength);
-    layer.strokeWeight(1);
-    layer.stroke(0);
-    layer.line(0, 0, this.arrowLength, 0);
-    layer.translate(this.arrowLength, 0);
-    layer.rotate(-HALF_PI / 2);
-    layer.line(0, 0, -this.arrowLength / 4, 0);
-    layer.rotate(HALF_PI);
-    layer.line(0, 0, -this.arrowLength / 4, 0);
-    layer.popMatrix();
-    layer.pop();
-  }
-
   void display(PGraphics layer) {
     Vec2D left = this.getLeft();
     Vec2D right = this.getRight();
@@ -229,13 +141,6 @@ class RibbonEndButtons {
     if (right != null) {
       this.rightArrow.display(layer);
     }
-    // if (this.center != null) {
-    //   layer.push();
-    //   layer.noStroke();
-    //   layer.fill(255, 0, 0);
-    //   layer.circle(this.center.x, this.center.y, this.radius);
-    //   layer.pop();
-    // }
   }
 }
 
