@@ -16,7 +16,7 @@ int[] PRINT_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_
 int RIBON_WID = 1;
 color WINDOW_BACKROUNG_COLOR = 0xffffffff;
 color MOUSE_STROKE_COLOR = 0xff000000;
-float RIBBON_GAP_FACTOR = 3.0;
+float RIBBON_GAP_FACTOR = 1.5;
 float DISPLAY_WINDOW_LINEAR_DENSITY = 1.0 / 10.0; // 1 point every N pixels
 color[] colors = new color[] {
   // red
@@ -238,7 +238,7 @@ class DisplayWindow extends PApplet {
     int date = (year() % 100) * 10000 + month() * 100 + day();
     int time = hour() * 10000 + minute() * 100 + second();
     PGraphics svg = createGraphics(this.ribbonsLayer.width, this.ribbonsLayer.height, SVG, this.path + "out/date-"+ date + "_time-"+ time + ".svg");
-    Ribbon[] allRibbons = this.ribbonMemory.getAllRibbons();
+    Ribbon[] allRibbons = this.ribbonMemory.getOrderedRibbonsForPlotter();
     svg.beginDraw();
     for (int i = 0; i < allRibbons.length; i++) {
       allRibbons[i].displayCurveSmooth(svg);

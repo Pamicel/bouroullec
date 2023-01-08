@@ -611,6 +611,14 @@ class Ribbon {
     }
     return null;
   }
+
+  Ribbon getInverted() {
+    Vec2D[] invertedCurve = new Vec2D[this.curve.length];
+    for (int i = 0; i < this.curve.length; i++) {
+      invertedCurve[i] = this.curve[this.curve.length - 1 - i];
+    }
+    return new Ribbon(invertedCurve);
+  }
 }
 
 class RibbonMemory {
@@ -631,6 +639,61 @@ class RibbonMemory {
 
   Ribbon[] getAllRibbons() {
     return this.allRibbons.toArray(new Ribbon[this.allRibbons.size()]);
+  }
+
+
+  /**
+   * Take a list of ribbons eg [ R1, R2, R3, R4, R5, R6, R7, R8, R9, R10 ]
+   * and return a list of ribbons in the order they should be drawn
+   * ie [ R1, R3, R5, R7, R9, R2, R4, R6, R8, R10 ]
+  */
+  ArrayList<Ribbon> weaveRibbonsForPlotter(Ribbon currentRibbon) {
+    return this.weaveRibbonsForPlotter(currentRibbon, new ArrayList<Ribbon>(), new ArrayList<Ribbon>());
+  }
+  ArrayList<Ribbon> weaveRibbonsForPlotter(Ribbon currentRibbon, ArrayList<Ribbon> firstArray, ArrayList<Ribbon> secondArray) {
+    // Add current ribbon to first array
+    firstArray.add(currentRibbon);
+
+    // if current ribbon has right ribbon
+    if (currentRibbon.rightRibbon != null) {
+      // Call function with right ribbon and first and second array in reverse order
+      return this.weaveRibbonsForPlotter(currentRibbon.rightRibbon, secondArray, firstArray);
+    }
+    // if not
+    else {
+      // Add second array to first array
+      firstArray.addAll(secondArray);
+      // Return first array
+      return firstArray;
+    }
+  }
+
+  Ribbon[] getOrderedRibbonsForPlotter() {
+    ArrayList<Ribbon> orderedRibbons = new ArrayList<Ribbon>();
+    ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>(this.allRibbons);
+    ArrayList<Ribbon> startingPoints = new ArrayList<Ribbon>();
+    for (Ribbon ribbon : ribbons) {
+      // Put all ribbons with no neighbors in the ordered list
+      if (ribbon.leftRibbon == null && ribbon.rightRibbon == null) {
+        orderedRibbons.add(ribbon);
+      }
+      // and all ribbons with a right ribbon but no left ribbon in the starting points list
+      else if (ribbon.leftRibbon == null && ribbon.rightRibbon != null) {
+        startingPoints.add(ribbon);
+      }
+    }
+    // Follow from each starting point, weave them into a list and add them to the ordered list
+    for (Ribbon startingPoint : startingPoints) {
+      orderedRibbons.addAll(this.weaveRibbonsForPlotter(startingPoint));
+    }
+    // Invert all ribbons with an even index in both lists
+    for (int i = 0; i < orderedRibbons.size(); i++) {
+      if (i % 2 == 0) {
+        orderedRibbons.set(i, orderedRibbons.get(i).getInverted());
+      }
+    }
+
+    return orderedRibbons.toArray(new Ribbon[orderedRibbons.size()]);
   }
 
   private void addRibbonButtons(Ribbon ribbon) {
