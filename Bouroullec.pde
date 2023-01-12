@@ -18,6 +18,7 @@ color WINDOW_BACKROUNG_COLOR = 0xffffffff;
 color MOUSE_STROKE_COLOR = 0xff000000;
 float RIBBON_GAP_FACTOR = 1.5;
 float DISPLAY_WINDOW_LINEAR_DENSITY = 1.0 / 10.0; // 1 point every N pixels
+boolean WEAVE = false;
 color[] colors = new color[] {
   // red
   // 0xaaff0000,
@@ -232,7 +233,7 @@ class DisplayWindow extends PApplet {
     int date = (year() % 100) * 10000 + month() * 100 + day();
     int time = hour() * 10000 + minute() * 100 + second();
     PGraphics svg = createGraphics(this.ribbonsLayer.width, this.ribbonsLayer.height, SVG, this.path + "out/date-"+ date + "_time-"+ time + ".svg");
-    Ribbon[] allRibbons = this.ribbonMemory.getOrderedRibbonsForPlotter();
+    Ribbon[] allRibbons = this.ribbonMemory.getOrderedRibbonsForPlotter(WEAVE);
     svg.beginDraw();
     for (int i = 0; i < allRibbons.length; i++) {
       allRibbons[i].displayCurveSmooth(svg);
@@ -390,9 +391,11 @@ class DisplayWindow extends PApplet {
 
     if (this.mode.current() == Mode.SELECT_RIBBON) {
       Ribbon currentRibbon = this.ribbonMemory.isOverRibbon(this.getMousePos(), 10);
-      Ribbon newRibbon = currentRibbon.duplicate();
-      addNewRibbon(newRibbon);
-      printNewRibbon(newRibbon);
+      if (currentRibbon != null) {
+        Ribbon newRibbon = currentRibbon.duplicate();
+        addNewRibbon(newRibbon);
+        printNewRibbon(newRibbon);
+      }
     }
 
     if (this.mode.current() == Mode.CUT_RIBBON) {
