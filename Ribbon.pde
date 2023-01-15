@@ -117,7 +117,7 @@ class RibbonEndButtons {
   }
 
   Vec2D getLeft() {
-    if (ribbon.leftRibbon != null) {
+    if (ribbon.leftRibbons != null) {
       this.leftBank = null;
       this.leftBankAnchorPoint = null;
     }
@@ -125,7 +125,7 @@ class RibbonEndButtons {
   }
 
   Vec2D getRight() {
-    if (ribbon.rightRibbon != null) {
+    if (ribbon.rightRibbons != null) {
       this.rightBank = null;
       this.rightBankAnchorPoint = null;
     }
@@ -188,14 +188,93 @@ class Ribbon {
   color col = color(0);
   color highlightColor = color(255, 0, 0);
   boolean isHighlighted = false;
+  /**
+   * Some context on the graphDepth:
+   * When cut, a ribbon is "replaced" with the two new ribbons that result from the cut,
+   * ie the original ribbon continues to exist, but is not drawn by the plotter.
+   *
+   * In other words, graphically speaking, the `cut` function does not work like this:
+   *
+   * O——————————————— // O is the parent of A
+   * A———————————————
+   *       ↓ cut()
+   * ///////////////// ↑ before, ↓ after
+   * O———————————————
+   * A——————————————— // A would remains
+   * B————— C———————— // B and C would be extensions
+   *
+   * But like this:
+   *
+   * O———————————————
+   * A———————————————
+   *       ↓ cut()
+   * /////////////////
+   * O———————————————
+   * B————— C———————— // B and C replace A
+   *
+   *
+   * If you were to extend B and cut C ...
+   *
+   * O———————————————
+   * B————— C————————
+   * ↓ ext()
+   * /////////////////
+   * O———————————————
+   * B————— C————————
+   * D—————    ↓
+   *           ↓ cut()
+   * /////////////////
+   * O———————————————
+   * B————— E—— F————
+   * D—————  ↓
+   *         ↓ ext()
+   * /////////////////
+   * O———————————————
+   * B————— E—— F————
+   * D————— G——
+   *         ↓ ext()
+   * /////////////////
+   * O———————————————
+   * B————— E—— F————
+   * D————— G——
+   *        H——
+   *
+   * Here, if i want to be able to weave the ribbons, we need to know their depth
+   * O——————————————— depth = 0
+   * B————— E—— F———— depth = 1
+   * D————— G——       depth = 2
+   *        H——       depth = 3
+   *
+   * So that we can print 0 then the 2s then the 1s then 3
+   * But because i decided to keep the original ribbon instances, the graph actually looks something like this
+   * O———————————————
+   * Axxxxxxxxxxxxxxx
+   * B————— Cxxxxxxxx
+   * D————— E—— F————
+   *        G——
+   *        H——
+   *
+   * The trick is that ribbons that result from an extension get the depth of their parent + 1
+   * and ribbons that result from a cut get the depth of their parent. In the example above:
+   * O.depth = 0,
+   * A.depth = 1 = O.depth + 1
+   * B.depth = 1 = A.depth
+   * C.depth = 1 = A.depth
+   * D.depth = 2 = B.depth + 1
+   * E.depth = 1 = C.depth
+   * F.depth = 1 = C.depth
+   * G.depth = 2 = E.depth + 1
+   * H.depth = 3 = G.depth + 1
+   */
+  int graphDepth = 0;
 
   RibbonEndButtons frontButtons = null,
                   backButtons = null;
 
   ArrayList<RibbonEndButtons> allButtons = new ArrayList<RibbonEndButtons>();
 
-  Ribbon leftRibbon = null,
-        rightRibbon = null;
+  ArrayList<Ribbon> leftRibbons = null,
+                    rightRibbons = null;
 
   float ribbonWid = RIBON_WID;
   float ribbonGapFactor = RIBBON_GAP_FACTOR;
@@ -216,23 +295,46 @@ class Ribbon {
     this.computeEndButtons();
   }
 
+  float getTailToHeadDistanceWith(Ribbon ribbon) {
+    // Distance between the last point of this ribbon's curve and the first point of the other ribbon's curve
+    Vec2D tail = this.curve[this.curve.length - 1];
+    Vec2D head = ribbon.curve[0];
+    return tail.distanceTo(head);
+  }
+
   boolean hasRightBank() {
-    return this.rightRibbon != null;
+    return this.rightRibbons != null;
   }
   boolean hasLeftBank() {
-    return this.leftRibbon != null;
+    return this.leftRibbons != null;
   }
 
   boolean isBorderRibbon() {
     return (!this.hasLeftBank()) || (!this.hasRightBank());
   }
 
-  void assignLeftRibbon(Ribbon leftRibbon) {
-    this.leftRibbon = leftRibbon;
+  boolean isCut() {
+    boolean isCutOnLeft = this.leftRibbons != null && this.leftRibbons.size() > 1;
+    boolean isCutOnRight = this.rightRibbons != null && this.rightRibbons.size() > 1;
+    return isCutOnLeft || isCutOnRight;
   }
 
-  void assignRightRibbon(Ribbon rightRibbon) {
-    this.rightRibbon = rightRibbon;
+  void assignLeftRibbon(Ribbon ribbon) {
+    if (this.leftRibbons != null) {
+      this.leftRibbons.add(ribbon);
+    } else {
+      this.leftRibbons = new ArrayList<Ribbon>();
+      this.leftRibbons.add(ribbon);
+    }
+  }
+
+  void assignRightRibbon(Ribbon ribbon) {
+    if (this.rightRibbons != null) {
+      this.rightRibbons.add(ribbon);
+    } else {
+      this.rightRibbons = new ArrayList<Ribbon>();
+      this.rightRibbons.add(ribbon);
+    }
   }
 
   void highlight() {
@@ -365,17 +467,23 @@ class Ribbon {
     layer.strokeWeight(4);
     layer.stroke(255, 0, 0);
     layer.strokeCap(PROJECT);
-    if (this.leftRibbon != null) {
-      firstB = this.leftRibbon.curve[0];
-      lastB = this.leftRibbon.curve[this.leftRibbon.curve.length - 1];
-      layer.line(firstA.x, firstA.y, firstB.x, firstB.y);
-      layer.line(lastA.x, lastA.y, lastB.x, lastB.y);
+    // For all ribbons in leftRibbons
+    if (this.leftRibbons != null) {
+      for (int i = 0; i < this.leftRibbons.size(); i++) {
+        firstB = this.leftRibbons.get(i).curve[0];
+        lastB = this.leftRibbons.get(i).curve[this.leftRibbons.get(i).curve.length - 1];
+        layer.line(firstA.x, firstA.y, firstB.x, firstB.y);
+        layer.line(lastA.x, lastA.y, lastB.x, lastB.y);
+      }
     }
-    if (this.rightRibbon != null) {
-      firstB = this.rightRibbon.curve[0];
-      lastB = this.rightRibbon.curve[this.rightRibbon.curve.length - 1];
-      layer.line(firstA.x, firstA.y, firstB.x, firstB.y);
-      layer.line(lastA.x, lastA.y, lastB.x, lastB.y);
+    // For all ribbons in rightRibbons
+    if (this.rightRibbons != null) {
+      for (int i = 0; i < this.rightRibbons.size(); i++) {
+        firstB = this.rightRibbons.get(i).curve[0];
+        lastB = this.rightRibbons.get(i).curve[this.rightRibbons.get(i).curve.length - 1];
+        layer.line(firstA.x, firstA.y, firstB.x, firstB.y);
+        layer.line(lastA.x, lastA.y, lastB.x, lastB.y);
+      }
     }
     layer.pop();
   }
@@ -397,7 +505,6 @@ class Ribbon {
     }
     layer.endShape();
   }
-
 
   void displayCurvePoints(PGraphics layer) {
     Vec2D pos;
@@ -423,7 +530,7 @@ class Ribbon {
     }
   }
 
-  Ribbon createLeftRibbon(float linearDensity, Vec2D[] variationCurve) {
+  private Ribbon createLeftRibbon(float linearDensity, Vec2D[] variationCurve) {
     Vec2D[] newCurve = new Vec2D[this.curve.length];
     for (int index = 0; index < newCurve.length; index++) {
       newCurve[index] = this.curve[index].copy().add(this.normals[index].getNormalizedTo(this.ribbonWid * this.ribbonGapFactor));
@@ -433,10 +540,11 @@ class Ribbon {
     if (newCurve.length < 2) { return null; }
     Ribbon left = new Ribbon(newCurve, variationCurve);
     left.col = this.col;
+    left.graphDepth = this.graphDepth + 1;
     return left;
   }
 
-  Ribbon createRightRibbon(float linearDensity, Vec2D[] variationCurve) {
+  private Ribbon createRightRibbon(float linearDensity, Vec2D[] variationCurve) {
     Vec2D[] invertedVariationCurve = null;
     Vec2D[] newCurve = new Vec2D[this.curve.length];
 
@@ -456,18 +564,19 @@ class Ribbon {
     if (newCurve.length < 2) { return null; }
     Ribbon right = new Ribbon(newCurve, invertedVariationCurve);
     right.col = this.col;
+    right.graphDepth = this.graphDepth + 1;
     return right;
   }
 
-  Ribbon createRightRibbon(float linearDensity) {
+  private Ribbon createRightRibbon(float linearDensity) {
     return this.createRightRibbon(linearDensity, null);
   }
 
-  Ribbon createLeftRibbon(float linearDensity) {
+  private Ribbon createLeftRibbon(float linearDensity) {
     return this.createLeftRibbon(linearDensity, null);
   }
 
-  void applyVariationsToCurve(Vec2D[] variations) {
+  private void applyVariationsToCurve(Vec2D[] variations) {
     Vec2D[] resampledVariations = regularResample(variations, this.curve.length);
 
     for (int j = 0; j < this.curve.length; j++) {
@@ -505,7 +614,7 @@ class Ribbon {
     }
   }
 
-  Ribbon createAndAssignLeftRibbon(float linearDensity, Vec2D[] variationCurve) {
+  Ribbon extendLeft(float linearDensity, Vec2D[] variationCurve) {
     Ribbon newRibbon = this.createLeftRibbon(linearDensity, variationCurve);
     if (newRibbon != null) {
       this.assignLeftRibbon(newRibbon);
@@ -515,7 +624,7 @@ class Ribbon {
     return newRibbon;
   }
 
-  Ribbon createAndAssignRightRibbon(float linearDensity, Vec2D[] variationCurve) {
+  Ribbon extendRight(float linearDensity, Vec2D[] variationCurve) {
     Ribbon newRibbon = this.createRightRibbon(linearDensity, variationCurve);
     if (newRibbon != null) {
       this.assignRightRibbon(newRibbon);
@@ -586,10 +695,10 @@ class Ribbon {
 
   Ribbon extend(Vec2D mousePos, Vec2D[] variationCurve, float linearDensity) {
     if (this.isOverLeft(mousePos)) {
-      return this.createAndAssignLeftRibbon(linearDensity, variationCurve);
+      return this.extendLeft(linearDensity, variationCurve);
     }
     if (this.isOverRight(mousePos)) {
-      return this.createAndAssignRightRibbon(linearDensity, variationCurve);
+      return this.extendRight(linearDensity, variationCurve);
     }
     return null;
   }
@@ -610,14 +719,10 @@ class Ribbon {
     return new Ribbon(invertedCurve);
   }
 
-  Ribbon[] cut(Vec2D mousePos, float tolerance) {
+  ArrayList<Ribbon> cut(Vec2D mousePos, float tolerance) {
     // If is over a button, find the button and cut the ribbon at the center of the button
     for (RibbonEndButtons buttons : this.allButtons) {
-      if (buttons.isHoverLeftBank(mousePos.x, mousePos.y)) {
-        // The center is a point from the curve
-        return this.cutAtPoint(buttons.center);
-      }
-      if (buttons.isHoverRightBank(mousePos.x, mousePos.y)) {
+      if (buttons.isHoverLeftBank(mousePos.x, mousePos.y) || buttons.isHoverRightBank(mousePos.x, mousePos.y)) {
         // The center is a point from the curve
         return this.cutAtPoint(buttons.center);
       }
@@ -625,7 +730,7 @@ class Ribbon {
     return null;
   }
 
-  Ribbon[] cutAtPoint(Vec2D curvePoint) {
+  ArrayList<Ribbon> createRibbonsFromCut(Vec2D curvePoint) {
     // Find the index of the point in the curve
     int index = -1;
     for (int i = 0; i < this.curve.length; i++) {
@@ -649,9 +754,52 @@ class Ribbon {
     // Create the two new ribbons
     Ribbon firstRibbon = new Ribbon(firstCurve);
     Ribbon secondRibbon = new Ribbon(secondCurve);
+    // Assign them a graphDepth
+    firstRibbon.graphDepth = this.graphDepth;
+    secondRibbon.graphDepth = this.graphDepth;
     // Return the two new ribbons
-    return new Ribbon[] {firstRibbon, secondRibbon};
+    ArrayList<Ribbon> newRibbons = new ArrayList<Ribbon>();
+    newRibbons.add(firstRibbon);
+    newRibbons.add(secondRibbon);
+    return newRibbons;
   }
+
+  ArrayList<Ribbon> cutAtPoint(Vec2D curvePoint) {
+    // If the Ribbon has already been cut, return null
+    if (this.isCut()) {
+      return null;
+    }
+
+    // If the Ribbon has ribbons on both sides, return null
+    if (this.leftRibbons != null && this.rightRibbons != null) {
+      return null;
+    }
+
+    ArrayList<Ribbon> newRibbons = this.createRibbonsFromCut(curvePoint);
+
+    // If the Ribbon has a exacly one left or right ribbon, attach the new ribbons to the Ribbon
+    // And if the Ribbon has no left nor right ribbon, simply return the two new ribbons, do not attach them
+
+    // If there is no left ribbon, but there is a right ribbon, attach the new ribbons by the left side
+    if (this.rightRibbons != null && this.leftRibbons == null) {
+      this.leftRibbons = newRibbons;
+      newRibbons.get(0).assignRightRibbon(this);
+      newRibbons.get(1).assignRightRibbon(this);
+    }
+    // If there is no right ribbon, but there is a left ribbon, attach the new ribbons by the right side
+    if (this.leftRibbons != null && this.rightRibbons == null) {
+      this.rightRibbons = newRibbons;
+      newRibbons.get(0).assignLeftRibbon(this);
+      newRibbons.get(1).assignLeftRibbon(this);
+    }
+
+    return newRibbons;
+  }
+}
+
+enum TraversalDirection {
+  LEFT_TO_RIGHT,
+  RIGHT_TO_LEFT
 }
 
 class RibbonMemory {
@@ -660,6 +808,7 @@ class RibbonMemory {
   Ribbon selectedRibbon = null;
   Ribbon selectedBorderRibbon = null;
   ArrayList<Ribbon> borderRibbons = new ArrayList<Ribbon>();
+  ArrayList<Ribbon> originRibbons = new ArrayList<Ribbon>();
 
   RibbonMemory() {}
 
@@ -667,13 +816,22 @@ class RibbonMemory {
     this.allRibbons.add(ribbon);
     this.borderRibbons.add(ribbon);
     this.selectedBorderRibbon = ribbon;
+    if (!ribbon.hasLeftBank() && !ribbon.hasRightBank()) {
+      this.originRibbons.add(ribbon);
+    }
     this.refreshBorderRibbons();
     this.addRibbonButtons(ribbon);
   }
 
   void removeRibbon(Ribbon ribbon) {
     this.allRibbons.remove(ribbon);
+    this.originRibbons.remove(ribbon);
+    this.borderRibbons.remove(ribbon);
     this.removeRibbonButtons(ribbon);
+  }
+
+  boolean isOrigin(Ribbon ribbon) {
+    return this.originRibbons.contains(ribbon);
   }
 
   Ribbon[] getAllRibbons() {
@@ -704,32 +862,34 @@ class RibbonMemory {
     return this.selectedRibbon;
   }
 
-  /**
-   * Take the starting point of a linked list of ribbons (the list is travered by following the rightRibbon property)
-   * and return a list of ribbons in the order they should be drawn with a "weaving" pattern
-   *
-   * ie if the linked list is [ R1, R2, R3, R4, R5, R6, R7, R8, R9, R10 ]
-   * the result should be [ R1, R3, R5, R7, R9, R2, R4, R6, R8, R10 ]
-  */
-  ArrayList<Ribbon> weaveRibbonsForPlotter(Ribbon currentRibbon) {
-    return this.weaveRibbonsForPlotter(currentRibbon, new ArrayList<Ribbon>(), new ArrayList<Ribbon>());
+  ArrayList<Ribbon> weaveRibbons(ArrayList<Ribbon> ribbons) {
+    ArrayList<Ribbon> firstArray = new ArrayList<Ribbon>();
+    ArrayList<Ribbon> secondArray = new ArrayList<Ribbon>();
+    // For every ribbon in the list
+    for (Ribbon ribbon: ribbons) {
+      if (ribbon.graphDepth % 2 == 0) {
+        firstArray.add(ribbon);
+      } else {
+        secondArray.add(ribbon);
+      }
+    }
+    firstArray.addAll(secondArray);
+    return firstArray;
   }
-  ArrayList<Ribbon> weaveRibbonsForPlotter(Ribbon currentRibbon, ArrayList<Ribbon> firstArray, ArrayList<Ribbon> secondArray) {
-    // Add current ribbon to first array
-    firstArray.add(currentRibbon);
 
-    // if current ribbon has right ribbon
-    if (currentRibbon.rightRibbon != null) {
-      // Call function with right ribbon and first and second array in reverse order
-      return this.weaveRibbonsForPlotter(currentRibbon.rightRibbon, secondArray, firstArray);
-    }
-    // if not
-    else {
-      // Add second array to first array
-      firstArray.addAll(secondArray);
-      // Return first array
-      return firstArray;
-    }
+  ArrayList<Ribbon> orderByGraphDepth(ArrayList<Ribbon> ribbons) {
+    ArrayList<Ribbon> orderedRibbons = (ArrayList<Ribbon>)ribbons.clone();
+    // sort by graphDepth
+    Collections.sort(orderedRibbons, new Comparator<Ribbon>() {
+      @Override
+      public int compare(Ribbon a, Ribbon b) {
+        // If the graphDepth is different, sort by graphDepth
+        if (a.graphDepth != b.graphDepth) return a.graphDepth - b.graphDepth;
+        // Otherwise, sort by distance between tail and head
+        return b.getTailToHeadDistanceWith(a) - a.getTailToHeadDistanceWith(b) > 0 ? 1 : -1;
+      }
+    });
+    return orderedRibbons;
   }
 
   /**
@@ -737,44 +897,144 @@ class RibbonMemory {
    * to create an array of ribbons
   */
   ArrayList<Ribbon> getRibbonsFromLeftToRight(Ribbon currentRibbon) {
+    return ribbonsArrayFromLevelOrderTraversal(currentRibbon, TraversalDirection.LEFT_TO_RIGHT);
+  }
+
+  /**
+   * Take the starting point of a linked list of ribbons and traverse it by following the leftRibbons property
+   * to create an array of ribbons
+  */
+  ArrayList<Ribbon> getRibbonsFromRightToLeft(Ribbon currentRibbon) {
+    return ribbonsArrayFromLevelOrderTraversal(currentRibbon, TraversalDirection.RIGHT_TO_LEFT);
+  }
+
+  /**
+   * There are six types of (legal) origin ribbons:
+   *
+   * | schematic | in plain english                      | ie                          |
+   * |-----------|---------------------------------------|-----------------------------|
+   * |     0     |  no left ribbon    no right ribbon    |                             |
+   * |     0—    |  no left ribbon    one right ribbon   | extended right              |
+   * |    —0     |  one left ribbon   no right ribbon    | extended left               |
+   * |    =0—    |  two left ribbons  one right ribbons  | cut left and extended right |
+   * |    —0=    |  one left ribbon   two right ribbons  | extended left and cut right |
+   * |    —0—    |  one left ribbon   one right ribbon   | extended left and right     |
+   *
+   * And three types of (illegal) origin ribbons:
+   *
+   * | schematic | in plain english                      | ie                 | why illegal?                                                                               |
+   * |-----------|---------------------------------------|--------------------|--------------------------------------------------------------------------------------------|
+   * |    =0=    |  two left ribbons  two right ribbons  | cut left and right | a ribbon can only be cut once                                                              |
+   * |    =0     |  two left ribbons  no right ribbon    | cut left           | when an origin ribbon that has not been extended is cut, it creates two new origin ribbons |
+   * |     0=    |  no left ribbon    two right ribbons  | cut right          | same as above                                                                              |
+   *
+   * This function takes an origin ribbon and returns an array of ribbons in the order they should be drawn
+   * it ignores ribbons with no left or right ribbon.
+   *
+   * If the ribbon has exactly one left ribbon, the method creates one array of ribbons by traversing from left
+   * to right starting from this left ribbon, and an other array of ribbons by traversing from right to left
+   * starting from the origin ribbon. It then orders the arrays by graph depth, reverses one of the arrays
+   * and concatenates the arrays in this order: [...reversed, ...normal]. It then filters out ribbons that have
+   * been cut, and returns the resulting array.
+   *
+   * If the ribbon has exactly one right ribbon, the method works symetrically.
+   */
+  ArrayList<Ribbon> originToRibbonArray(Ribbon originRibbon) {
+    // Throw error if origin ribbon is illegal
+    if (
+      originRibbon.leftRibbons.size() == 2 && originRibbon.rightRibbons.size() == 2
+    ) {
+      throw new RuntimeException("Illegal ribbon");
+    }
+    if (
+      originRibbon.rightRibbons.size() == 2 && originRibbon.leftRibbons == null ||
+      originRibbon.leftRibbons.size() == 2 && originRibbon.rightRibbons == null
+    ) {
+      throw new RuntimeException("Illegal origin ribbon");
+    }
+
+    // If the origin ribbon has no left or right ribbon, return an empty array
+    if (originRibbon.leftRibbons == null && originRibbon.rightRibbons == null) {
+      return new ArrayList<Ribbon>();
+    }
+
+    Ribbon leftStart = null, rightStart = null;
+    // cases 0—, —0— and =0-
+    if (originRibbon.rightRibbons.size() == 1) {
+      leftStart = originRibbon;
+      rightStart = originRibbon.rightRibbons.get(0);
+    }
+    // cases —0 and —0=
+    else if (originRibbon.leftRibbons.size() == 1) {
+      leftStart = originRibbon.leftRibbons.get(0);
+      rightStart = originRibbon;
+    }
+
+    ArrayList<Ribbon> leftRibbons = leftStart != null ? orderByGraphDepth(getRibbonsFromRightToLeft(leftStart)) : new ArrayList<Ribbon>();
+    ArrayList<Ribbon> rightRibbons = rightStart != null ? orderByGraphDepth(getRibbonsFromLeftToRight(rightStart)) : new ArrayList<Ribbon>();
+
+    // Reverse the right ribbons array
+    Collections.reverse(rightRibbons);
+
+    // Concatenate the arrays
     ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>();
-    while (currentRibbon != null) {
-      ribbons.add(currentRibbon);
-      currentRibbon = currentRibbon.rightRibbon;
+    ribbons.addAll(rightRibbons);
+    ribbons.addAll(leftRibbons);
+
+    // Filter out cut ribbons
+    ArrayList<Ribbon> filteredRibbons = new ArrayList<Ribbon>();
+    for (Ribbon ribbon : ribbons) {
+      if (!ribbon.isCut()) {
+        filteredRibbons.add(ribbon);
+      }
+    }
+
+    // Invert all ribbons with an even graph depth
+    for (int i = 0; i < filteredRibbons.size(); i++) {
+      if (filteredRibbons.get(i).graphDepth % 2 == 0) {
+        filteredRibbons.set(i, filteredRibbons.get(i).getInverted());
+      }
+    }
+
+
+    return filteredRibbons;
+  }
+
+  ArrayList<Ribbon> ribbonsArrayFromLevelOrderTraversal(Ribbon origin, TraversalDirection direction) {
+    ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>();
+    Queue<Ribbon> queue = new LinkedList<Ribbon>();
+    queue.add(origin);
+    while (!queue.isEmpty()) {
+      Ribbon current = queue.poll();
+      // Add to array
+      ribbons.add(current);
+      if (direction == TraversalDirection.RIGHT_TO_LEFT) {
+        if (current.leftRibbons != null) {
+          queue.addAll(current.leftRibbons);
+        }
+      } else {
+        if (current.rightRibbons != null) {
+          queue.addAll(current.rightRibbons);
+        }
+      }
     }
     return ribbons;
   }
 
   Ribbon[] getOrderedRibbonsForPlotter(boolean weave) {
-    ArrayList<Ribbon> orderedRibbons = new ArrayList<Ribbon>();
-    ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>(this.allRibbons);
-    ArrayList<Ribbon> startingPoints = new ArrayList<Ribbon>();
-    for (Ribbon ribbon : ribbons) {
-      // Put all ribbons with no neighbors in the ordered list
-      if (ribbon.leftRibbon == null && ribbon.rightRibbon == null) {
-        orderedRibbons.add(ribbon);
-      }
-      // and all ribbons with a right ribbon but no left ribbon in the starting points list
-      else if (ribbon.leftRibbon == null && ribbon.rightRibbon != null) {
-        startingPoints.add(ribbon);
-      }
+    ArrayList<Ribbon> orderedRibbons = this.getRibbonsFromOrigins();
+    if (weave) {
+      orderedRibbons = this.weaveRibbons(orderedRibbons);
     }
-    // Follow from each starting point, weave them into a list and add them to the ordered list
-    for (Ribbon startingPoint : startingPoints) {
-      if (weave) {
-        orderedRibbons.addAll(this.weaveRibbonsForPlotter(startingPoint));
-      } else {
-        orderedRibbons.addAll(this.getRibbonsFromLeftToRight(startingPoint));
-      }
-    }
-    // Invert all ribbons with an even index
-    for (int i = 0; i < orderedRibbons.size(); i++) {
-      if (i % 2 == 0) {
-        orderedRibbons.set(i, orderedRibbons.get(i).getInverted());
-      }
-    }
-
     return orderedRibbons.toArray(new Ribbon[orderedRibbons.size()]);
+  }
+
+  ArrayList<Ribbon> getRibbonsFromOrigins() {
+    ArrayList<Ribbon> ribbons = new ArrayList<Ribbon>();
+    for (Ribbon ribbon : this.originRibbons) {
+      ribbons.addAll(this.originToRibbonArray(ribbon));
+    }
+    return ribbons;
   }
 
   private void addRibbonButtons(Ribbon ribbon) {

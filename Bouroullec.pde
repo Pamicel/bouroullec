@@ -16,7 +16,7 @@ int[] PRINT_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_
 int RIBON_WID = 1;
 color WINDOW_BACKROUNG_COLOR = 0xffffffff;
 color MOUSE_STROKE_COLOR = 0xff000000;
-float RIBBON_GAP_FACTOR = 1.5;
+float RIBBON_GAP_FACTOR = 3;
 float DISPLAY_WINDOW_LINEAR_DENSITY = 1.0 / 10.0; // 1 point every N pixels
 boolean WEAVE = false;
 color[] colors = new color[] {
@@ -312,12 +312,12 @@ class DisplayWindow extends PApplet {
   }
 
   void cut(Ribbon current) {
-    Ribbon[] newRibbons = current.cut(this.getMousePos(), 10);
+    ArrayList<Ribbon> newRibbons = current.cut(this.getMousePos(), 10);
     if (newRibbons != null) {
-      this.ribbonMemory.addRibbon(newRibbons[0]);
-      this.ribbonMemory.addRibbon(newRibbons[1]);
-      printNewRibbon(newRibbons[0]);
-      printNewRibbon(newRibbons[1]);
+      for (int i = 0; i < newRibbons.size(); i++) {
+        this.ribbonMemory.addRibbon(newRibbons.get(i));
+        printNewRibbon(newRibbons.get(i));
+      }
     }
   }
 
