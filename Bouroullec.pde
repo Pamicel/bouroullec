@@ -6,7 +6,7 @@ import processing.svg.*;
 ToolWindow toolWindow;
 DisplayWindow displayWindow;
 // PrintWindow printWindow;
-boolean SECONDARY_MONITOR = false;
+boolean SECONDARY_MONITOR = true;
 int[] CANVAS_SIZE = new int[]{2100 / 3, 2970 / 3};
 int[] DISPLAY_WIN_SIZE = new int[]{2100 / 3, 2970 / 3};
 int[] DISPLAY_WIN_XY = SECONDARY_MONITOR ? new int[]{600, -2000} : new int[]{50, 50};
@@ -16,7 +16,7 @@ int[] PRINT_WIN_XY = new int[]{DISPLAY_WIN_SIZE[0] + DISPLAY_WIN_XY[0], DISPLAY_
 int RIBON_WID = 1;
 color WINDOW_BACKROUNG_COLOR = 0xffffffff;
 color MOUSE_STROKE_COLOR = 0xff000000;
-float RIBBON_GAP_FACTOR = 3;
+float RIBBON_GAP_FACTOR = 4;
 float DISPLAY_WINDOW_LINEAR_DENSITY = 1.0 / 10.0; // 1 point every N pixels
 boolean WEAVE = false;
 color[] colors = new color[] {
@@ -236,7 +236,7 @@ class DisplayWindow extends PApplet {
     Ribbon[] allRibbons = this.ribbonMemory.getOrderedRibbonsForPlotter(WEAVE);
     svg.beginDraw();
     for (int i = 0; i < allRibbons.length; i++) {
-      allRibbons[i].displayCurveSmooth(svg);
+      if (!allRibbons[i].isCut()) allRibbons[i].displayCurveSmooth(svg);
     }
     svg.dispose();
     svg.endDraw();
