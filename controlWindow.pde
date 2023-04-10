@@ -12,7 +12,7 @@ class Subwindow {
     this.setSubwindowSize(w, h);
   }
 
-  PGraphics pushLayer(String name, int w, int h) {
+  PGraphics pushLayer() {
     PGraphics layer = this.window.createGraphics(this.w, this.h);
     // Add layer to the array of layers
     this.layers.add(layer);
@@ -52,6 +52,125 @@ class Subwindow {
 
 // Curve subwindow
 class CurveSubwindow extends Subwindow {
+
+  class Curve {
+    ArrayList<Vec2D> points = new ArrayList<Vec2D>();
+    Curve() {}
+
+    void addPoint(Vec2D point) {
+      if (this.canAddPoint(point)) {
+        this.points.add(point);
+      }
+    }
+
+    Vec2D get(int i) {
+      return this.points.get(i);
+    }
+
+    int size() {
+      return this.points.size();
+    }
+
+    boolean canAddPoint(Vec2D point) {
+      int curveLen = this.points.size();
+
+      // good if first point
+      if (curveLen == 0) return true;
+
+      Vec2D curveFirstPoint = this.points.get(0);
+
+      // good if second point and different from first point
+      if (curveLen == 1) return curveFirstPoint.x != point.x;
+
+      Vec2D curveLastPoint = this.points.get(curveLen - 1);
+      boolean pointOnRight = point.x > curveLastPoint.x;
+      boolean curveGoesForward = this.direction() == 1;
+
+      return (curveGoesForward && pointOnRight) // the curve goes forwards and the point is on the right
+              || (!curveGoesForward && !pointOnRight); // the curve goes backwards and the point is on the left
+    }
+
+    void reset() {
+      this.points = new ArrayList<Vec2D>();
+    }
+
+    int direction() {
+      Vec2D curveFirstPoint = this.points.get(0);
+      Vec2D curveLastPoint = this.points.get(this.points.size() - 1);
+      return curveLastPoint.x > curveFirstPoint.x ? 1 : -1;
+    }
+
+    void reverse() {
+      ArrayList<Vec2D> reversed = new ArrayList<Vec2D>();
+      for (int i = 0; i < this.points.size(); i++) {
+        reversed.add(this.points.get(this.points.size() - i - 1));
+      }
+      this.points = reversed;
+    }
+
+    void resample(float minX, float maxX, float linearDensity) {
+      ArrayList<Vec2D> shavedCurve = new ArrayList<Vec2D>();
+      Vec2D currentPoint, nextPoint;
+      boolean ltZero;
+      boolean gtOne;
+      int curveLen = this.points.size();
+      int curveDirection = this.direction();
+
+      // Make the curve go forward
+      if (curveDirection == -1) {
+        this.reverse();
+      }
+
+      // remove unused points
+      for (int i = 0; i < curveLen; i++) {
+        currentPoint = this.points.get(i);
+        nextPoint = i + 1 < curveLen ? this.points.get(i + 1) : null;
+        if (nextPoint != null) {
+          boolean crossingMin = currentPoint.x < minX && nextPoint.x > minX;
+          boolean crossingMax = currentPoint.x < maxX && nextPoint.x > maxX;
+          if (crossingMin || crossingMax) {
+            float crossingX = crossingMin ? minX : maxX;
+            float newPointY = (crossingX - currentPoint.x) / (nextPoint.x - currentPoint.x) * (nextPoint.y - nextPoint.y) + currentPoint.y;
+            Vec2D newPoint = new Vec2D(crossingX, newPointY);
+            currentPoint = newPoint;
+          }
+        }
+        ltZero = currentPoint.x < minX;
+        gtOne = currentPoint.x > maxX;
+        if (!ltZero && !gtOne) {
+          shavedCurve.add(currentPoint);
+        }
+      }
+
+      // if no point remains, nothing to do, return
+      if (shavedCurve.size() <= 1) {
+        return;
+      }
+
+      // make sure first and last points are at minX and maxX
+      Vec2D firstPoint = shavedCurve.get(0);
+      Vec2D lastPoint = shavedCurve.get(shavedCurve.size() - 1);
+      if (firstPoint.x > minX) {
+        shavedCurve.add(0, new Vec2D(minX, firstPoint.y));
+      }
+      if (lastPoint.x < maxX) {
+        shavedCurve.add(new Vec2D(maxX, lastPoint.y));
+      }
+
+      Vec2D[] resampled = densityResample(shavedCurve, linearDensity);
+      this.points = new ArrayList<Vec2D>(Arrays.asList(resampled));
+    }
+
+    Vec2D[] yNormalizedPoints(int ymin, int ygap) {
+      Vec2D[] yNormalizedCurve = new Vec2D[this.points.size()];
+      for(int i = 0; i < this.points.size(); i++) {
+        yNormalizedCurve[i] = new Vec2D(0, (- this.points.get(i).y + ymin) / (ygap / 2));
+      }
+
+      return yNormalizedCurve;
+    }
+  }
+
   // constructor
   CurveSubwindow(PApplet window, int x, int y, int w, int h, int padding) {
     super(window, x, y, w, h);
@@ -63,144 +182,41 @@ class CurveSubwindow extends Subwindow {
     this.ymax = 3 * this.height / 4;
     this.ymin = this.height / 4;
     this.ygap = this.ymax - this.ymin;
-    this.backgroundLayer = this.pushLayer("backgroundLayer", this.width, this.height);
-    this.guidesLayer = this.pushLayer("guidesLayer", this.width, this.height);
-    this.finalCurveLayer = this.pushLayer("finalCurveLayer", this.width, this.height);
-    this.drawingLayer = this.pushLayer("drawingLayer", this.width, this.height);
+    this.backgroundLayer = this.pushLayer();
+    this.guidesLayer = this.pushLayer();
+    this.curveLayer = this.pushLayer();
+    this.curve = new Curve();
   }
 
-  ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
+  Curve curve;
+  // ArrayList<Vec2D> curve = new ArrayList<Vec2D>();
   Vec2D[] finalCurve = null;
-  PGraphics finalCurveLayer, drawingLayer, backgroundLayer, guidesLayer;
+  PGraphics curveLayer, backgroundLayer, guidesLayer;
   float linearDensity = 1.0 / 5;
   int xmin, xmax, padding;
   int ymin, ymax, ymid, ygap;
   boolean isDrawing = false;
   int width, height;
 
-  private int curveDirection(ArrayList<Vec2D> curve) {
-    Vec2D curveFirstPoint = curve.get(0);
-    Vec2D curveLastPoint = curve.get(curve.size() - 1);
-    return curveLastPoint.x > curveFirstPoint.x ? 1 : -1;
-  }
-
-  boolean canAddPointToCurve(Vec2D point) {
-    int curveLen = this.curve.size();
-
-    // good if first point
-    if (curveLen == 0) return true;
-
-    Vec2D curveFirstPoint = this.curve.get(0);
-
-    // good if second point and different from first point
-    if (curveLen == 1) return curveFirstPoint.x != point.x;
-
-    Vec2D curveLastPoint = this.curve.get(curveLen - 1);
-    boolean pointOnRight = point.x > curveLastPoint.x;
-    boolean curveGoesForward = this.curveDirection(this.curve) == 1;
-
-    return (curveGoesForward && pointOnRight) // the curve goes forwards and the point is on the right
-            || (!curveGoesForward && !pointOnRight); // the curve goes backwards and the point is on the left
+  private int curveDirection() {
+    return this.curve.direction();
   }
 
   void addPointToCurve (Vec2D point) {
-    if (this.canAddPointToCurve(point)) {
-      this.curve.add(point);
-    }
-  }
-
-  void resetCurve () {
-    this.curve = new ArrayList<Vec2D>();
+    this.curve.addPoint(point);
   }
 
   void saveFinalCurve() {
-    ArrayList<Vec2D> shavedCurve = new ArrayList<Vec2D>();
-    Vec2D currentPoint, nextPoint;
-    boolean ltZero;
-    boolean gtOne;
-    int curveLen = this.curve.size();
-    int curveDirection = this.curveDirection(this.curve);
-
-    // Make the curve go forward
-    if (curveDirection == -1) {
-      ArrayList<Vec2D> reversed = new ArrayList<Vec2D>();
-      for (int i = 0; i < curveLen; i++) {
-        reversed.add(this.curve.get(curveLen - i - 1));
-      }
-      this.curve = reversed;
-    }
-
-    // remove unused points
     float minX = this.padding;
     float maxX = this.width - this.padding;
-    for (int i = 0; i < curveLen; i++) {
-      currentPoint = this.curve.get(i);
-      nextPoint = i + 1 < curveLen ? this.curve.get(i + 1) : null;
-      if (nextPoint != null) {
-        boolean crossingMin = currentPoint.x < minX && nextPoint.x > minX;
-        boolean crossingMax = currentPoint.x < maxX && nextPoint.x > maxX;
-        if (crossingMin || crossingMax) {
-          float crossingX = crossingMin ? minX : maxX;
-          float newPointY = (crossingX - currentPoint.x) / (nextPoint.x - currentPoint.x) * (nextPoint.y - nextPoint.y) + currentPoint.y;
-          Vec2D newPoint = new Vec2D(crossingX, newPointY);
-          currentPoint = newPoint;
-        }
-      }
-      ltZero = currentPoint.x < this.padding;
-      gtOne = currentPoint.x > this.width - this.padding;
-      if (!ltZero && !gtOne) {
-        shavedCurve.add(currentPoint);
-      }
-    }
-
-    // if no point remains, nothing to do, return
-    if (shavedCurve.size() <= 1) {
-      return;
-    }
-
-    // make sure first and last points are at minX and maxX
-    Vec2D firstPoint = shavedCurve.get(0);
-    Vec2D lastPoint = shavedCurve.get(shavedCurve.size() - 1);
-    if (firstPoint.x > minX) {
-      shavedCurve.add(0, new Vec2D(minX, firstPoint.y));
-    }
-    if (lastPoint.x < maxX) {
-      shavedCurve.add(new Vec2D(maxX, lastPoint.y));
-    }
-
-    this.finalCurve = densityResample(shavedCurve, this.linearDensity);
+    this.curve.resample(minX, maxX, this.linearDensity);
   }
 
   Vec2D[] getYNormalizedCurve() {
-    if (this.finalCurve == null) {
-      return null;
-    }
-    Vec2D[] yNormalizedCurve = new Vec2D[this.finalCurve.length];
-    for(int i = 0; i < this.finalCurve.length; i++) {
-      yNormalizedCurve[i] = new Vec2D(0, (- this.finalCurve[i].y + this.ymin) / (this.ygap / 2));
-    }
-
-    return yNormalizedCurve;
+    return this.curve.yNormalizedPoints(this.ymin, this.ygap);
   }
 
-  void printFinalCurve(PGraphics layer) {
-    layer.beginDraw();
-    layer.clear();
-    layer.noFill();
-    layer.stroke(0);
-    layer.strokeWeight(1);
-    if (this.finalCurve != null) {
-      layer.beginShape();
-      for (int i = 0; i < this.finalCurve.length; i++) {
-        layer.vertex(this.finalCurve[i].x, this.finalCurve[i].y);
-        layer.circle(this.finalCurve[i].x, this.finalCurve[i].y, 5);
-      }
-      layer.endShape();
-    }
-    layer.endDraw();
-  }
-
-  void printDrawing(PGraphics layer) {
+  void printCurve(PGraphics layer) {
     layer.beginDraw();
     layer.clear();
     layer.noFill();
@@ -250,11 +266,7 @@ class CurveSubwindow extends Subwindow {
     // Draw guides
     this.printGuides(this.guidesLayer);
     // Draw the curve that is being drawn
-    if (this.isDrawing) {
-      this.printDrawing(this.drawingLayer);
-    } else {
-      this.printFinalCurve(this.finalCurveLayer);
-    }
+    this.printCurve(this.curveLayer);
   }
 
   void draw() {
@@ -276,8 +288,8 @@ class CurveSubwindow extends Subwindow {
     int mouseY
   ) {
     if (this.contains(mouseX, mouseY) && !this.isDrawing) {
-      this.resetCurve();
-      this.addPointToCurve(new Vec2D(mouseX, mouseY));
+      this.curve.reset();
+      this.curve.addPoint(new Vec2D(mouseX, mouseY));
       this.isDrawing = true;
     }
   }
@@ -285,8 +297,6 @@ class CurveSubwindow extends Subwindow {
   void mouseReleased() {
     if (this.isDrawing) {
       this.saveFinalCurve();
-      this.resetCurve();
-      this.clearLayer(this.drawingLayer);
       this.isDrawing = false;
     }
   }
